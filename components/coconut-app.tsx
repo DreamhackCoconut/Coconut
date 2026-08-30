@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, CircleHelp, Monitor, Moon, ShoppingBag, Sun, Waves, X } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccountDialog } from '@/components/account-dialog';
 import { ArtisanView } from '@/components/artisan-view';
@@ -242,7 +243,7 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
       <header className="topbar">
         <div className="brand-island">
           <button className="brand pressable" type="button" onClick={() => navigate('shop')} aria-label="Coconut home">
-            <span className="brand-mark" aria-hidden="true"><CoconutMark /></span>
+            <span className="brand-mark" aria-hidden="true"><Image className="brand-logo-image" src="/coconut-logo.jpg" alt="" width={32} height={32} priority /></span>
             <span>
               <span className="brand-name">Coconut</span>
               <span className="brand-note">Island-made logistics</span>
@@ -284,18 +285,8 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
     <div id="main-content" tabIndex={-1}>{appContent}</div>
     <SiteFooter onJoin={() => setAccountDialogOpen(true)} />
     <div className="network-status"><span className="status-dot" /> {backendMode === 'appwrite-configured' ? 'Appwrite ready' : 'Demo fallback'} <CircleHelp size={12} aria-label={backendMode === 'appwrite-configured' ? 'Appwrite API configured; provider fallbacks remain available' : 'Appwrite API not configured; deterministic seeded data is active'} /><button className="network-reset" type="button" onClick={resetDemoState}>Reset demo</button></div>
-    {toast ? <div className="toast" role="status" aria-live="polite"><Check size={15} color="#8bd7d4" /> {toast}</div> : null}
+    {toast ? <div className="toast" role="status" aria-live="polite"><Check size={15} color="#b7d8f7" /> {toast}</div> : null}
     {order ? <div className="overlay" role="presentation"><section className="confirmation" role="dialog" aria-modal="true" aria-labelledby="order-title"><button className="icon-close pressable" type="button" onClick={() => setOrder(undefined)} aria-label="Close order confirmation"><X size={16} /></button><div className="confirmation-mark"><Check size={21} /></div><h2 id="order-title">Shared parcel booked.</h2><p>Demo order <span className="mono">{order.orderId}</span> is attached to the Friday West Coast Batch. No payment was captured.</p><button className="button-primary pressable" type="button" onClick={() => { setOrder(undefined); navigate('shop'); }}>Back to the island <Waves size={14} /></button></section></div> : null}
     {accountDialogOpen ? <AccountDialog onClose={() => setAccountDialogOpen(false)} onAuthenticated={handleAuthenticated} /> : null}
   </div>;
-}
-
-function CoconutMark() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="8" cy="10" r="1.3" fill="currentColor" />
-      <circle cx="14.4" cy="8.6" r="1.3" fill="currentColor" />
-      <path d="M4.5 13.4c2.6 2.3 5.7 3 8.8 2.2 3.1-.8 5.6-2.9 7-5.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-    </svg>
-  );
 }

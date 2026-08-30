@@ -26,6 +26,14 @@ Accessibility is part of the design, not a follow-up task:
 - Keep guest actions available and explain when an account is optional versus required.
 - Respect `prefers-reduced-motion` and avoid layout-shifting animations.
 
+Flat visual contract:
+
+- Use solid, opaque color tokens for surfaces. Do not add gradients, glass effects, backdrop blur, or drop shadows.
+- Use tonal surface blocks, spacing, grouping, and type hierarchy to create depth. Container borders are off by default; reserve outlines for keyboard focus and clear error states. Keep rounded corners intentional and consistent with the shared radius tokens.
+- Use normal sentence-case text. Do not add `text-transform: uppercase`, lowercase, small caps, tracked-out microcopy, or decorative monospace labels.
+- Motion must be purposeful: use short `transform`/`opacity` transitions with named properties, pointer-gated hover states, and a reduced-motion fallback.
+- Run `npm run lint:design` whenever changing CSS or UI copy. It is a required CI guardrail for this contract.
+
 ## Data and account behavior
 
 - Keep SDK access behind `lib/account.ts`, `lib/client-gateway.ts`, or the repository layer. UI components should receive typed data and callbacks.
@@ -54,4 +62,3 @@ Add optional accounts and seller listing workspace
 ```
 
 Do not commit generated secrets, local environment files, or unrelated worktree changes.
-

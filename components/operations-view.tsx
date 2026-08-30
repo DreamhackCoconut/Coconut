@@ -78,7 +78,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
       <section className="metric-grid motion-stagger" aria-label="Batch metrics">
         <div className="metric-card" style={{ ['--stagger' as string]: 0 }}>
           <div className="metric-header">
-            <span className="tiny-label">orders in batch</span>
+          <span className="tiny-label">Orders in batch</span>
             {/* Sparkline */}
             <svg className="sparkline" viewBox="0 0 60 20" fill="none">
               <path d="M 0 15 Q 15 12, 30 8 T 60 4" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" />
@@ -89,7 +89,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
         </div>
         <div className="metric-card" style={{ ['--stagger' as string]: 1 }}>
           <div className="metric-header">
-            <span className="tiny-label">optimized distance</span>
+            <span className="tiny-label">Optimized distance</span>
             <svg className="sparkline" viewBox="0 0 60 20" fill="none">
               <path d="M 0 6 Q 20 10, 40 14 T 60 18" stroke="var(--coral)" strokeWidth="2" strokeLinecap="round" />
             </svg>
@@ -99,7 +99,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
         </div>
         <div className="metric-card" style={{ ['--stagger' as string]: 2 }}>
           <div className="metric-header">
-            <span className="tiny-label">pickup time</span>
+            <span className="tiny-label">Pickup time</span>
             <svg className="sparkline" viewBox="0 0 60 20" fill="none">
               <path d="M 0 16 Q 15 10, 30 12 T 60 5" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" />
             </svg>
@@ -109,7 +109,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
         </div>
         <div className="metric-card" style={{ ['--stagger' as string]: 3 }}>
           <div className="metric-header">
-            <span className="tiny-label">optimizer mode</span>
+            <span className="tiny-label">Optimizer mode</span>
           </div>
           <strong style={{ fontSize: 23 }}>{optimized.optimizerMode === 'ortools' ? 'OR-Tools' : 'TS fallback'}</strong>
           <p><Settings2 /> deterministic constraints</p>

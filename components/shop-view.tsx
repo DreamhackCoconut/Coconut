@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Box, Check, CircleCheck, Clock, Eye, Feather, Hammer, MapPin, Package, PackageCheck, Plus, Radio, Route as RouteIcon, Search, ShipWheel, UsersRound } from 'lucide-react';
+import { ArrowRight, Box, Check, CircleCheck, Clock, Eye, Feather, Hammer, MapPin, Package, PackageCheck, Plus, Radio, Route as RouteIcon, Search, ShipWheel } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BatchSnapshot, CartLine, Departure, Product, ProductCategory, Seller } from '@/lib/domain/types';
@@ -271,14 +271,14 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         </aside>
       </section>
 
-      <section className="signal-band motion-stagger" aria-label="Coconut network signals">
-        <div className="signal-cell" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">The network effect</span><strong>{orderCount} orders moving together</strong><p>Shared pickup, shared freight, less empty ocean.</p></div>
+      <section className="signal-band motion-stagger" aria-label="Shared shop signals">
+        <div className="signal-cell" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">Shared orders</span><strong>{orderCount} orders moving together</strong><p>Shared pickup, shared freight, less empty ocean.</p></div>
         <div className="signal-cell" style={{ ['--stagger' as string]: 1 }}><span className="tiny-label">Local makers</span><strong>{sellerCount} workshops</strong><p>Across Rarotonga’s coast.</p></div>
-        <div className="signal-cell" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">Current signal</span><strong><ShipWheel size={18} style={{ display: 'inline', verticalAlign: '-3px' }} /> {batch.weatherLabel.toLowerCase()} seas</strong><p>Route reliability is part of every recommendation.</p></div>
+        <div className="signal-cell" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">Departure conditions</span><strong><ShipWheel size={18} style={{ display: 'inline', verticalAlign: '-3px' }} /> {batch.weatherLabel.toLowerCase()} seas</strong><p>Route reliability is part of every recommendation.</p></div>
       </section>
 
       <section ref={howReveal.ref} className={`how-it-works ${howReveal.className}`} aria-labelledby="how-coconut-works">
-        <div className="how-header"><div><span className="eyebrow">The simple version</span><h2 id="how-coconut-works" className="section-heading">How <em>Coconut</em> works</h2></div><p>Independent makers stay independent. Coconut coordinates the expensive movement between them.</p></div>
+        <div className="how-header"><div><span className="eyebrow">How it works</span><h2 id="how-coconut-works" className="section-heading">How <em>Coconut</em> works</h2></div><p>Independent makers stay independent. Coconut coordinates the expensive movement between them.</p></div>
         <ol className="how-grid">
           <li className="how-step"><span className="how-step-index">01</span><div><h3>Shop local</h3><p>Buy directly from island artisans and discover the story behind each piece.</p></div></li>
           <li className="how-step"><span className="how-step-index"><PackageCheck size={17} /></span><div><h3>Ship together</h3><p>Compatible orders share a departure and a fair slice of fixed freight.</p></div></li>
@@ -344,7 +344,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         ))}
       </div>
 
-      <div className="notice" style={{ marginTop: 24 }}><UsersRound size={16} /><span><strong>Try the proof point:</strong> add the $32 Handwoven Coastal Basket, then add Shell Earrings. The earrings ride inside the same parcel for <strong>$0 estimated shipping delta.</strong></span></div>
+      <div className="notice" style={{ marginTop: 24 }}><span><strong>Shared freight preview</strong> Two compatible pieces can travel in one parcel with no estimated shipping delta.</span></div>
       <div className="footer-note"><span><MapPin size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> Rarotonga → Auckland → everywhere</span><span>Demo marketplace data · deterministic fallback ready</span></div>
 
       {/* Quick View Drawer Modal */}

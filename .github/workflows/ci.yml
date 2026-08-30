@@ -27,6 +27,8 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
+      - name: Check design guardrails
+        run: npm run lint:design
       - name: Run acceptance tests
         run: npm test
       - name: Build site

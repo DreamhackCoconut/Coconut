@@ -113,6 +113,7 @@ Useful checks:
 ```bash
 npm run typecheck
 npm run lint
+npm run lint:design
 npm test
 npm run build
 npm run build:functions
@@ -140,7 +141,7 @@ Keep runtime variables such as `EASYPOST_API_KEY`, `OPENROUTESERVICE_API_KEY`, `
 4. Artisan: show the production queue, market opportunities, and price guidance.
 5. Close: **Coconut makes dozens of tiny island exporters behave like one coordinated logistics network.**
 
-More presentation-ready material lives in [`docs/`](docs/), including the architecture, algorithm notes, demo script, judge Q&A, submission copy, pitch, source notes, and checklist.
+More presentation-ready material lives in [`docs/`](docs/), including the architecture, algorithm notes, design guardrails, demo script, judge Q&A, submission copy, pitch, source notes, and checklist.
 
 ## Product routes
 

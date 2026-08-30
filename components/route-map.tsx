@@ -82,15 +82,31 @@ export function RouteMap({ route, baseline, stops }: { route: RouteOptimizationR
         <path className="schematic-grid" d="M8 22H92M8 42H92M8 62H92M8 82H92M24 8V92M44 8V92M64 8V92M84 8V92" />
         {baselineCoordinates.length > 1 ? <polyline className="schematic-baseline" points={baselineCoordinates.map(toSchematicPoint).join(' ')} /> : null}
         {routeCoordinates.length > 1 ? <polyline className="schematic-optimized" points={routeCoordinates.map(toSchematicPoint).join(' ')} /> : null}
-        {stops.map((stop) => <circle key={stop.sellerId} className="schematic-stop" cx={toSchematicPoint([stop.longitude, stop.latitude]).split(',')[0]} cy={toSchematicPoint([stop.longitude, stop.latitude]).split(',')[1]} r="2.2" />)}
-        {routeCoordinates[0] ? <circle className="schematic-hub" cx={toSchematicPoint(routeCoordinates[0]).split(',')[0]} cy={toSchematicPoint(routeCoordinates[0]).split(',')[1]} r="3" /> : null}
+        {stops.map((stop, index) => {
+          const [cx, cy] = toSchematicPoint([stop.longitude, stop.latitude]).split(',');
+          return (
+            <g key={stop.sellerId}>
+              <circle className="schematic-stop" cx={cx} cy={cy} r="2.5" />
+              <text className="schematic-stop-label" x={cx} y={cy}>{index + 1}</text>
+            </g>
+          );
+        })}
+        {routeCoordinates[0] ? (() => {
+          const [cx, cy] = toSchematicPoint(routeCoordinates[0]).split(',');
+          return (
+            <g key="avatiu-hub">
+              <circle className="schematic-hub" cx={cx} cy={cy} r="3.5" />
+              <text className="schematic-hub-label" x={Number(cx) + 5} y={Number(cy) - 4}>Avatiu hub</text>
+            </g>
+          );
+        })() : null}
       </svg>
       <div className="route-map__canvas" ref={containerRef} />
       <div className="map-legend">
-        <span><i className="legend-line optimized" /> optimized</span>
-        <span><i className="legend-line baseline" /> baseline</span>
-        <span><i className="legend-dot" /> stop</span>
-        <span><i className="legend-dot hub" /> hub</span>
+        <span><i className="legend-line optimized" /> Optimized</span>
+        <span><i className="legend-line baseline" /> Baseline</span>
+        <span><i className="legend-dot" /> Stop</span>
+        <span><i className="legend-dot hub" /> Hub</span>
       </div>
     </div>
   );

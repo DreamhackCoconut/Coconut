@@ -5,6 +5,13 @@ on:
     branches: [main, "codex/**"]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: Deploy TablesDB, Functions, and Site even when no matching files changed
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -64,6 +71,7 @@ jobs:
       tables: ${{ steps.filter.outputs.tables }}
       functions: ${{ steps.filter.outputs.functions }}
       site: ${{ steps.filter.outputs.site }}
+      force: ${{ steps.filter.outputs.force }}
     steps:
       - name: Check out repository history
         uses: actions/checkout@v4
@@ -76,6 +84,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.before }}
           HEAD_SHA: ${{ github.sha }}
+          FORCE_DEPLOY: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_all == true }}
         run: |
           set -euo pipefail
 
@@ -88,6 +97,7 @@ jobs:
           tables=false
           functions=false
           site=false
+          force="${FORCE_DEPLOY:-false}"
 
           while IFS= read -r changed_path; do
             case "$changed_path" in
@@ -115,6 +125,12 @@ jobs:
             esac
           done < <(git diff --name-only "$base_sha" "$head_sha")
 
+          if [[ "$force" == "true" ]]; then
+            tables=true
+            functions=true
+            site=true
+          fi
+
           any=false
           if [[ "$tables" == "true" || "$functions" == "true" || "$site" == "true" ]]; then
             any=true
@@ -124,17 +140,19 @@ jobs:
           echo "functions=$functions" >> "$GITHUB_OUTPUT"
           echo "site=$site" >> "$GITHUB_OUTPUT"
           echo "any=$any" >> "$GITHUB_OUTPUT"
+          echo "force=$force" >> "$GITHUB_OUTPUT"
 
           {
             echo "### Appwrite deployment change detection"
             echo "- TablesDB schema: `$tables`"
             echo "- Functions: `$functions`"
             echo "- Site: `$site`"
+            echo "- Full deployment requested: `$force`"
           } >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     name: Deploy to Appwrite
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.deploy_all == true)
     needs: [web, optimizer, appwrite_changes]
     runs-on: ubuntu-latest
     environment: production

@@ -1,4 +1,4 @@
-import { DESTINATION_ZONES, LOGISTICS, clamp, roundMoney } from '@/lib/config/logistics';
+import { LOGISTICS, clamp, getDestinationZone, roundMoney } from '@/lib/config/logistics';
 import { getDemoBatchSnapshot, getDemoDepartures } from '@/lib/data/seed';
 import type { BatchSnapshot, CartLine, Departure, Destination, Product, Quote } from '@/lib/domain/types';
 import { packCart } from '@/lib/engines/packing';
@@ -11,9 +11,17 @@ function hoursBetween(start: string, end: string): number {
 export function isCartReadyForDeparture(lines: CartLine[], products: Product[], departure: Departure, now = new Date()): boolean {
   const requiredHours = Math.max(...lines.map((line) => {
     const product = products.find((candidate) => candidate.id === line.productId);
-    return product?.inventory ? 0 : (product?.productionHours ?? 0) * line.quantity;
+    if (!product || !Number.isInteger(line.quantity) || line.quantity <= 0) return Number.POSITIVE_INFINITY;
+    return product.inventory >= line.quantity ? 0 : Math.max(0, product.productionHours) * line.quantity;
   }), 0);
   return requiredHours <= Math.max(0, hoursBetween(now.toISOString(), departure.cutoffAt) - LOGISTICS.productionPickupBufferHours);
+}
+
+export function isDepartureCompatible(destination: Destination, departure: Departure): boolean {
+  const destinationZone = getDestinationZone(destination.countryCode);
+  // The seeded US-WEST sailings are gateway departures with final-mile coverage
+  // for every supported destination. Other routes remain zone-specific.
+  return departure.destinationZone === destinationZone || destinationZone === 'GLOBAL' || departure.destinationZone === 'US-WEST';
 }
 
 function scoreDepartures(options: Array<{ departure: Departure; pooledUsd: number; transitHours: number; weatherRisk: number; utilization: number }>) {
@@ -33,36 +41,33 @@ function scoreDepartures(options: Array<{ departure: Departure; pooledUsd: numbe
   });
 }
 
-export function getEligibleDepartures(lines: CartLine[], products: Product[], destination: Destination, batch: BatchSnapshot, departures: Departure[], now = new Date()) {
-  const packing = packCart(lines, products);
-  const destinationZone = DESTINATION_ZONES[destination.countryCode]?.zone ?? 'GLOBAL';
+export function getEligibleDepartures(lines: CartLine[], products: Product[], destination: Destination, batch: BatchSnapshot, departures: Departure[], now = new Date(), packing = packCart(lines, products)) {
   const options = departures.filter((departure) => {
-    const isFuture = new Date(departure.cutoffAt).getTime() > now.getTime();
+    const cutoffTime = new Date(departure.cutoffAt).getTime();
+    const departureTime = new Date(departure.departureAt).getTime();
+    const isFuture = Number.isFinite(cutoffTime) && cutoffTime > now.getTime();
+    const departureIsFuture = Number.isFinite(departureTime) && departureTime > now.getTime();
+    const numericFieldsValid = [departure.maxWeightKg, departure.maxVolumeM3, departure.fixedCostUsd, departure.variableCostPerKg, departure.variableCostPerM3, departure.weatherRisk].every(Number.isFinite) && departure.maxWeightKg > 0 && departure.maxVolumeM3 > 0 && departure.fixedCostUsd >= 0 && departure.variableCostPerKg >= 0 && departure.variableCostPerM3 >= 0 && departure.weatherRisk >= 0 && departure.weatherRisk <= 1;
     const capacityOk = batch.currentWeightKg + packing.totalWeightKg <= departure.maxWeightKg && batch.currentVolumeM3 + packing.totalVolumeM3 <= departure.maxVolumeM3;
-    const destinationOk = departure.destinationZone === destinationZone || destinationZone === 'GLOBAL' || departure.destinationZone === 'US-WEST';
-    return isFuture && capacityOk && destinationOk && isCartReadyForDeparture(lines, products, departure, now);
+    const destinationOk = isDepartureCompatible(destination, departure);
+    return departure.status !== 'closed' && numericFieldsValid && isFuture && departureIsFuture && capacityOk && destinationOk && isCartReadyForDeparture(lines, products, departure, now);
   });
-  return options.length ? options : departures.filter((departure) => new Date(departure.departureAt).getTime() > now.getTime()).slice(0, 1);
+  return options;
 }
 
-export function quoteCart(lines: CartLine[], destination: Destination, products: Product[], batch: BatchSnapshot = getDemoBatchSnapshot(), departures: Departure[] = getDemoDepartures()): Quote {
-  const safeLines = lines.filter((line) => line.quantity > 0);
+export function quoteCart(lines: CartLine[], destination: Destination, products: Product[], batch: BatchSnapshot = getDemoBatchSnapshot(), departures: Departure[] = getDemoDepartures(), now = new Date()): Quote {
+  if (lines.some((line) => !Number.isInteger(line.quantity) || line.quantity <= 0)) throw new Error('Cart quantities must be positive integers.');
+  const safeLines = lines;
   const productMap = new Map(products.map((product) => [product.id, product]));
   const packing = packCart(safeLines, products);
   const subtotalUsd = roundMoney(safeLines.reduce((sum, line) => sum + (productMap.get(line.productId)?.priceUsd ?? 0) * line.quantity, 0));
-  const eligible = getEligibleDepartures(safeLines, products, destination, batch, departures);
+  const eligible = getEligibleDepartures(safeLines, products, destination, batch, departures, now, packing);
+  if (!eligible.length) throw new Error('No eligible departure is available for this cart.');
   const scored = scoreDepartures(eligible.map((departure) => {
     const pooled = estimatePooledShipping({ packing, departure, batch, destination });
     return { departure, pooledUsd: pooled.totalUsd, transitHours: hoursBetween(departure.departureAt, departure.arrivalAt), weatherRisk: departure.weatherRisk, utilization: pooled.batchUtilization };
   }));
-  const recommended = [...scored].sort((a, b) => b.score - a.score)[0] ?? {
-    departure: departures[0],
-    pooledUsd: 0,
-    transitHours: 0,
-    weatherRisk: 0.5,
-    utilization: 0,
-    score: 0,
-  };
+  const recommended = [...scored].sort((a, b) => b.score - a.score)[0];
   const pooled = estimatePooledShipping({ packing, departure: recommended.departure, batch, destination });
   const solo = estimateSoloShipping(packing, destination);
   const savings = calculateSavings(solo.totalUsd, pooled.totalUsd);
@@ -95,8 +100,8 @@ export function quoteCart(lines: CartLine[], destination: Destination, products:
 }
 
 export function getDepartureScorePreview(lines: CartLine[], destination: Destination, products: Product[], batch = getDemoBatchSnapshot()) {
-  return getEligibleDepartures(lines, products, destination, batch, getDemoDepartures()).map((departure) => {
-    const packing = packCart(lines, products);
+  const packing = packCart(lines, products);
+  return getEligibleDepartures(lines, products, destination, batch, getDemoDepartures(), new Date(), packing).map((departure) => {
     const pooled = estimatePooledShipping({ packing, departure, batch, destination });
     return { departure, pooledUsd: pooled.totalUsd, weatherReliability: 1 - departure.weatherRisk, utilization: pooled.batchUtilization };
   });

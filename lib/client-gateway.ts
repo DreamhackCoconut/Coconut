@@ -15,7 +15,7 @@ export type MarketplaceData = {
   batch: BatchSnapshot;
 };
 
-type GatewayResponse<T> = { data?: T; error?: string };
+type GatewayResponse<T> = { data?: T; error?: string | { message?: string } };
 
 const localRepository = new DemoMarketplaceRepository();
 
@@ -46,19 +46,36 @@ async function invokeRemote<T>(route: string, method: string, payload: Record<st
   const requestBody = JSON.stringify({ __route: route, __method: method, payload });
   const url = remoteFunctionUrl();
   if (url) {
-    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    let response: Response;
+    try {
+      response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
     if (!response.ok) throw new Error(`Coconut API returned ${response.status}`);
-    const body = await response.json() as GatewayResponse<T> | T;
-    return (body as GatewayResponse<T>).data ?? body as T;
+    return unwrapGatewayResponse<T>(await response.json());
   }
   const functions = remoteFunctions();
   if (!functions) throw new Error('Appwrite API function is not configured');
   const functionId = process.env.NEXT_PUBLIC_APPWRITE_API_FUNCTION_ID as string;
   const execution = await functions.createExecution({ functionId, body: requestBody, async: false });
+  const responseStatusCode = Number((execution as { responseStatusCode?: number }).responseStatusCode ?? 200);
+  if (responseStatusCode >= 400) throw new Error(`Coconut API returned ${responseStatusCode}`);
   const responseBody = (execution as { responseBody?: string }).responseBody;
   if (!responseBody) throw new Error('Appwrite API function did not return a response');
-  const body = JSON.parse(responseBody) as GatewayResponse<T> | T;
-  return (body as GatewayResponse<T>).data ?? body as T;
+  return unwrapGatewayResponse<T>(JSON.parse(responseBody));
+}
+
+function unwrapGatewayResponse<T>(body: unknown): T {
+  if (!body || typeof body !== 'object') return body as T;
+  const envelope = body as GatewayResponse<T>;
+  if (envelope.error) {
+    const message = typeof envelope.error === 'string' ? envelope.error : envelope.error.message;
+    throw new Error(message || 'Coconut API request failed.');
+  }
+  return envelope.data !== undefined ? envelope.data : body as T;
 }
 
 async function withDemoFallback<T>(remote: () => Promise<T>, demo: () => Promise<T>): Promise<T> {
@@ -196,4 +213,5 @@ export type DemoOrderInput = {
   subtotalUsd: number;
   pooledShippingUsd: number;
   destinationCountry: string;
+  batchId?: string;
 };

@@ -12,6 +12,7 @@ import { getMarineForecast } from '@/lib/providers/open-meteo';
 import { getMarketplaceRepository } from '@/lib/repositories';
 import { createAppwriteServerClient } from '@/lib/repositories/appwrite';
 import { eventRequestSchema, cartRequestSchema } from '@/lib/server/validation';
+import { ZodError } from 'zod';
 import { logServerEvent } from '@/lib/server/logger';
 import { optimizeOperationsBatch, getOperationsDemoData } from '@/lib/operations';
 import { invokeOrToolsOptimizer } from '@/functions/coconut-api/src/optimizer-client';
@@ -32,14 +33,23 @@ type FunctionContext = { req: AppwriteRequest; res: AppwriteResponse; log: (mess
 
 type GatewayEnvelope = { __route?: string; __method?: string; payload?: Record<string, unknown> };
 
+class ApiError extends Error {
+  constructor(public readonly statusCode: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 function parseBody(req: AppwriteRequest): Record<string, unknown> {
-  if (req.bodyJson && typeof req.bodyJson === 'object') return req.bodyJson as Record<string, unknown>;
+  if (req.bodyJson && typeof req.bodyJson === 'object' && !Array.isArray(req.bodyJson)) return req.bodyJson as Record<string, unknown>;
   if (!req.body) return {};
   try {
     const parsed = JSON.parse(req.body) as unknown;
-    return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : {};
-  } catch {
-    return {};
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new ApiError(400, 'Request body must be a JSON object.');
+    return parsed as Record<string, unknown>;
+  } catch (caught) {
+    if (caught instanceof ApiError) throw caught;
+    throw new ApiError(400, 'Request body must contain valid JSON.');
   }
 }
 
@@ -69,6 +79,7 @@ function persistentCache(): AppwriteCacheStore | undefined {
 async function quoteWithProviders(lines: CartLine[], destination: Destination) {
   const repository = getMarketplaceRepository();
   const [products, batch, departures] = await Promise.all([repository.listProducts(), repository.getBatchSnapshot(), repository.getDepartures()]);
+  assertCartCatalog(lines, products);
   const quote = quoteCart(lines, destination, products, batch, departures);
   const cachedFinalMile = await getPersistentProviderResult({
     store: persistentCache(),
@@ -90,6 +101,15 @@ async function quoteWithProviders(lines: CartLine[], destination: Destination) {
     breakdown: { ...quote.breakdown, finalMileUsd: cachedFinalMile.data.rateUsd },
     providerModes: { ...quote.providerModes, carrier: cachedFinalMile.metadata.mode },
   };
+}
+
+function assertCartCatalog(lines: CartLine[], products: Array<{ id: string; name: string; active: boolean; inventory: number }>): void {
+  const productById = new Map(products.map((product) => [product.id, product]));
+  for (const line of lines) {
+    const product = productById.get(line.productId);
+    if (!product || !product.active) throw new ApiError(422, `Product ${line.productId} is not available.`);
+    if (line.quantity > product.inventory) throw new ApiError(422, `${product.name} does not have enough inventory.`);
+  }
 }
 
 function parseCartPayload(payload: Record<string, unknown>) {
@@ -130,6 +150,7 @@ async function dispatch(info: { route: string; method: string; payload: Record<s
   if (route === '/recommendations/cart' && method === 'POST') {
     const parsed = parseCartPayload(payload);
     const data = await marketplace();
+    assertCartCatalog(parsed.items, data.products);
     return buildRecommendations({ lines: parsed.items, destination: parsed.destination, products: data.products, sellers: data.sellers, batch: data.batch });
   }
   if (route === '/events' && method === 'POST') {
@@ -140,7 +161,7 @@ async function dispatch(info: { route: string; method: string; payload: Record<s
   if (route === '/orders' && method === 'POST') {
     const parsed = parseCartPayload(payload);
     const quote = await quoteWithProviders(parsed.items, parsed.destination);
-    return getMarketplaceRepository().createDemoOrder({ lines: parsed.items, subtotalUsd: quote.subtotalUsd, pooledShippingUsd: quote.shipping.pooledUsd, destinationCountry: parsed.destination.countryCode });
+    return getMarketplaceRepository().createDemoOrder({ lines: parsed.items, subtotalUsd: quote.subtotalUsd, pooledShippingUsd: quote.shipping.pooledUsd, destinationCountry: parsed.destination.countryCode, batchId: quote.recommendedBatch.id });
   }
   if (route === '/operations/batches' && method === 'GET') return [getOperationsDemoData()];
   if (route === '/operations/batches/batch-friday-west-coast' && method === 'GET') return getOperationsDemoData();
@@ -172,6 +193,8 @@ async function dispatch(info: { route: string; method: string; payload: Record<s
     return { orders: [], historicalEventCount: data.summary.eventCount };
   }
   if (route === '/demo/reset' && method === 'POST') {
+    if (process.env.DEMO_MODE === 'false') throw new ApiError(403, 'Demo reset is disabled outside demo mode.');
+    if (process.env.DEMO_RESET_TOKEN && payload.resetToken !== process.env.DEMO_RESET_TOKEN) throw new ApiError(403, 'A valid demo reset token is required.');
     await getMarketplaceRepository().resetDemoState();
     return { reset: true, mode: 'demo' };
   }
@@ -179,16 +202,18 @@ async function dispatch(info: { route: string; method: string; payload: Record<s
 }
 
 export default async function main({ req, res, log, error }: FunctionContext) {
-  const info = requestInfo(req);
-  logServerEvent('coconut_api_request', { route: info.route, method: info.method });
-  log(`Coconut API ${info.method} ${info.route}`);
   try {
+    const info = requestInfo(req);
+    logServerEvent('coconut_api_request', { route: info.route, method: info.method });
+    log(`Coconut API ${info.method} ${info.route}`);
     const data = await dispatch(info);
     if (data === undefined) return res.json({ error: 'Not found' }, 404);
     return res.json({ data, providerModes: { backend: 'appwrite' } });
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : 'Unexpected request error';
     error(message);
-    return res.json({ error: message }, 400);
+    const statusCode = caught instanceof ApiError ? caught.statusCode : caught instanceof ZodError ? 422 : 500;
+    const safeMessage = caught instanceof ZodError ? 'Request validation failed.' : statusCode >= 500 ? 'The Coconut API could not complete the request.' : message;
+    return res.json({ error: { code: statusCode >= 500 ? 'INTERNAL_ERROR' : 'INVALID_REQUEST', message: safeMessage } }, statusCode);
   }
 }

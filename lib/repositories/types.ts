@@ -5,6 +5,7 @@ export type DemoOrderInput = {
   subtotalUsd: number;
   pooledShippingUsd: number;
   destinationCountry: string;
+  batchId?: string;
 };
 
 export interface MarketplaceRepository {

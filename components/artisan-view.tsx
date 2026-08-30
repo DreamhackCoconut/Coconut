@@ -8,6 +8,7 @@ import type { CoconutAccount, SellerListing } from '@/lib/account';
 import type { MarketOpportunity, Product, ProductionJob } from '@/lib/domain/types';
 import type { SellerDashboard } from '@/lib/client-gateway';
 import { getPriceGuidance } from '@/lib/engines/market-opportunity';
+import { CoconutMark } from '@/components/coconut-mark';
 import { useReveal } from '@/components/use-reveal';
 import { useCountUp } from '@/components/use-count-up';
 
@@ -19,7 +20,7 @@ export function ArtisanView({ data, loading: _loading, account, onRequireAccount
   const activeProductsCount = useCountUp(data?.summary.activeProducts ?? 0);
   const impressionsCount = useCountUp(data?.summary.impressions ?? 0);
   const eventCount = useCountUp(data?.summary.eventCount ?? 0);
-  if (!data) return <main className="content"><div className="artisan-hero motion-fade"><div><span className="eyebrow">Artisan intelligence</span><h1 className="section-heading" style={{ marginTop: 14 }}>A clearer next<br /><em>move.</em></h1></div><p className="muted" style={{ maxWidth: 400, lineHeight: 1.55 }}>Loading your production plan and market signals…</p></div><div className="metric-grid" aria-hidden="true">{[0, 1, 2, 3].map((index) => <div className="metric-card skeleton" key={index}>placeholder</div>)}</div><div className="panel skeleton" style={{ minHeight: 280, marginTop: 18 }}>placeholder</div></main>;
+  if (!data) return <main className="content"><div className="artisan-hero motion-fade"><div><span className="eyebrow">Artisan intelligence</span><h1 className="section-heading" style={{ marginTop: 14 }}>A clearer next<br /><em>move.</em></h1></div><p className="muted" style={{ maxWidth: 400, lineHeight: 1.55 }}><span className="loading-mark"><CoconutMark size={16} /></span> Loading your production plan and market signals…</p></div><div className="metric-grid" aria-hidden="true">{[0, 1, 2, 3].map((index) => <div className="metric-card skeleton" key={index}>placeholder</div>)}</div><div className="panel skeleton" style={{ minHeight: 280, marginTop: 18 }}>placeholder</div></main>;
   const { seller, products, productionPlan, markets, summary } = data;
   const leadProduct = products[0];
   const leadMarket = markets[0];

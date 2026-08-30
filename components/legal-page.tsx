@@ -1,5 +1,6 @@
-import { ArrowLeft, Waves } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { CoconutMark } from '@/components/coconut-mark';
 import { SiteFooter } from '@/components/site-footer';
 
 export function LegalPage({ kind }: { kind: 'privacy' | 'terms' }) {
@@ -7,7 +8,7 @@ export function LegalPage({ kind }: { kind: 'privacy' | 'terms' }) {
   return (
     <div className="legal-shell">
       <header className="legal-topbar">
-        <Link className="brand" href="/" aria-label="Coconut home"><span className="brand-mark" aria-hidden="true"><Waves size={17} /></span><span><span className="brand-name">Coconut</span><span className="brand-note">island-made logistics</span></span></Link>
+        <Link className="brand" href="/" aria-label="Coconut home"><span className="brand-mark" aria-hidden="true"><CoconutMark /></span><span><span className="brand-name">Coconut</span><span className="brand-note">island-made logistics</span></span></Link>
         <Link className="legal-back" href="/"><ArrowLeft size={14} /> Back to marketplace</Link>
       </header>
       <main className="legal-content">

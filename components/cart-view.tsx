@@ -3,6 +3,7 @@
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, CircleCheck, CreditCard, Leaf, Minus, Package, Plus, ShieldCheck, Trash2, Waves } from 'lucide-react';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
+import { CoconutMark } from '@/components/coconut-mark';
 import type { CartLine, Destination, Product, Quote, Recommendation, Seller } from '@/lib/domain/types';
 
 function money(value: number) { return `$${value.toFixed(2)}`; }
@@ -112,7 +113,7 @@ export function CartView({ products, sellers: _sellers, quote, recommendations, 
               </div>
             ) : (
               <div className="empty-state" style={{ marginTop: 18 }}>
-                <Package size={23} color="var(--teal)" style={{ marginBottom: 13, marginInline: 'auto' }} />
+                <span style={{ display: 'block', width: 'fit-content', marginBottom: 13, marginInline: 'auto', color: 'var(--teal)' }}><CoconutMark size={32} /></span>
                 <h3>Your parcel is waiting.</h3>
                 <p>Head back to the collection and choose a piece to start a shared journey.</p>
               </div>

@@ -14,7 +14,7 @@ import { getCurrentAccount, loadSavedCart, saveCart, signOut, type CoconutAccoun
 import { createDemoOrder, getCartRecommendations, getCartQuote, getClientBackendMode, getMarketplaceData, getOperations, getSellerDashboard, optimizeOperations, recordMarketplaceEvent, resetDemo } from '@/lib/client-gateway';
 import type { CartLine, Destination, Product, Quote, Recommendation } from '@/lib/domain/types';
 
-export type AppView = 'shop' | 'cart' | 'operations' | 'artisan';
+export type AppView = 'intro' | 'shop' | 'cart' | 'operations' | 'artisan';
 
 const defaultDestination: Destination = { countryCode: 'US', region: 'West Coast', postalCode: '94107' };
 
@@ -28,7 +28,7 @@ function accountInitials(account: CoconutAccount) {
   return account.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 }
 
-export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initialView?: AppView; initialProductSlug?: string }) {
+export function CoconutApp({ initialView = 'intro', initialProductSlug }: { initialView?: AppView; initialProductSlug?: string }) {
   const [view, setView] = useState<AppView>(initialProductSlug ? 'shop' : initialView);
   const [showProduct, setShowProduct] = useState(Boolean(initialProductSlug));
   const [data, setData] = useState<Awaited<ReturnType<typeof getMarketplaceData>>>();
@@ -130,6 +130,7 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
   function navigate(nextView: AppView) {
     setShowProduct(false);
     setView(nextView);
+    if (nextView === 'intro' || nextView === 'shop') window.scrollTo({ top: 0, behavior: 'auto' });
     if (nextView === 'operations' && !operations) setLoadingOperations(true);
   }
 
@@ -200,7 +201,7 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
     setQuoteError(undefined);
     setOrder(undefined);
     setShowProduct(false);
-    setView('shop');
+    setView('intro');
     notify('Canonical demo state restored.');
     void resetDemo();
   }
@@ -212,7 +213,7 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
     void recordMarketplaceEvent({ sessionId: 'demo-session', eventType: 'purchase', metadata: result });
   }
 
-  const appContent = showProduct && initialProductSlug && selectedProduct ? <ProductView product={selectedProduct} added={lines.some((line) => line.productId === selectedProduct.id)} onAdd={() => addToCart(selectedProduct)} onOpenCart={() => navigate('cart')} onBack={() => navigate('shop')} /> : view === 'shop' ? <ShopView products={data?.products ?? []} sellers={data?.sellers ?? []} departures={data?.departures ?? []} batch={data?.batch ?? { id: '', departureId: '', destinationZone: '', currentWeightKg: 0, currentVolumeM3: 0, orderCount: 0, participatingSellerIds: [], weatherRisk: 0, weatherLabel: 'loading', estimatedLocalPickupCostUsd: 0, predictedTotalLogisticsCostUsd: 0 }} cartLines={lines} onAdd={addToCart} onOpenCart={() => navigate('cart')} /> : view === 'cart' ? <CartView products={data?.products ?? []} sellers={data?.sellers ?? []} quote={quote} recommendations={recommendations} lines={lines} destination={destination} loading={loadingQuote} error={quoteError} onDestinationChange={setDestination} onQuantityChange={changeQuantity} onRemove={(productId) => changeQuantity(productId, 0)} onAdd={addToCart} onPlaceOrder={placeOrder} onContinueShopping={() => navigate('shop')} /> : view === 'operations' ? <OperationsView data={operations} loading={loadingOperations && !operations} optimizing={loadingOperations} onOptimize={optimize} /> : <ArtisanView data={sellerDashboard ?? null} loading={loadingSeller} account={account} onRequireAccount={() => setAccountDialogOpen(true)} onCreated={handleListingCreated} />;
+  const appContent = showProduct && initialProductSlug && selectedProduct ? <ProductView product={selectedProduct} added={lines.some((line) => line.productId === selectedProduct.id)} onAdd={() => addToCart(selectedProduct)} onOpenCart={() => navigate('cart')} onBack={() => navigate('shop')} /> : view === 'intro' || view === 'shop' ? <ShopView mode={view === 'intro' ? 'introduction' : 'collection'} products={data?.products ?? []} sellers={data?.sellers ?? []} departures={data?.departures ?? []} batch={data?.batch ?? { id: '', departureId: '', destinationZone: '', currentWeightKg: 0, currentVolumeM3: 0, orderCount: 0, participatingSellerIds: [], weatherRisk: 0, weatherLabel: 'loading', estimatedLocalPickupCostUsd: 0, predictedTotalLogisticsCostUsd: 0 }} cartLines={lines} onAdd={addToCart} onOpenCart={() => navigate('cart')} onOpenCollection={() => navigate('shop')} /> : view === 'cart' ? <CartView products={data?.products ?? []} sellers={data?.sellers ?? []} quote={quote} recommendations={recommendations} lines={lines} destination={destination} loading={loadingQuote} error={quoteError} onDestinationChange={setDestination} onQuantityChange={changeQuantity} onRemove={(productId) => changeQuantity(productId, 0)} onAdd={addToCart} onPlaceOrder={placeOrder} onContinueShopping={() => navigate('shop')} /> : view === 'operations' ? <OperationsView data={operations} loading={loadingOperations && !operations} optimizing={loadingOperations} onOptimize={optimize} /> : <ArtisanView data={sellerDashboard ?? null} loading={loadingSeller} account={account} onRequireAccount={() => setAccountDialogOpen(true)} onCreated={handleListingCreated} />;
 
   return <div className="app-shell">
     <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -220,7 +221,7 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
       <header className="topbar">
         {/* Left Island: Brand */}
         <div className="brand-island">
-          <button className="brand pressable" type="button" onClick={() => navigate('shop')} aria-label="Coconut home">
+          <button className="brand pressable" type="button" onClick={() => navigate('intro')} aria-label="Coconut home">
             <span className="brand-mark" aria-hidden="true"><Image className="brand-logo-image" src="/coconut-logo.jpg" alt="" width={32} height={32} priority unoptimized /></span>
             <span>
               <span className="brand-name">Coconut</span>
@@ -233,7 +234,8 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
         <div className="main-nav-island">
           <nav className="main-nav" aria-label="Primary navigation" ref={navRef}>
             <span className="nav-indicator" aria-hidden="true" style={{ transform: `translateX(${navIndicator.x}px)`, width: navIndicator.width }} />
-            <button ref={(el) => { if (view === 'shop' && !showProduct) activeNavButtonRef.current = el; }} className={`nav-button ${view === 'shop' && !showProduct ? 'active' : ''}`} type="button" aria-current={view === 'shop' && !showProduct ? 'page' : undefined} onClick={() => navigate('shop')}>Shop</button>
+            <button ref={(el) => { if (view === 'intro' && !showProduct) activeNavButtonRef.current = el; }} className={`nav-button ${view === 'intro' && !showProduct ? 'active' : ''}`} type="button" aria-current={view === 'intro' && !showProduct ? 'page' : undefined} onClick={() => navigate('intro')}>Introduction</button>
+            <button ref={(el) => { if (view === 'shop' && !showProduct) activeNavButtonRef.current = el; }} className={`nav-button ${view === 'shop' && !showProduct ? 'active' : ''}`} type="button" aria-current={view === 'shop' && !showProduct ? 'page' : undefined} onClick={() => navigate('shop')}>Collection</button>
             <button ref={(el) => { if (view === 'cart') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'cart' ? 'active' : ''}`} type="button" aria-current={view === 'cart' ? 'page' : undefined} onClick={() => navigate('cart')}>Cart</button>
             <button ref={(el) => { if (view === 'operations') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'operations' ? 'active' : ''}`} type="button" aria-current={view === 'operations' ? 'page' : undefined} onClick={() => navigate('operations')}>Operations</button>
             <button ref={(el) => { if (view === 'artisan') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'artisan' ? 'active' : ''}`} type="button" aria-current={view === 'artisan' ? 'page' : undefined} onClick={() => navigate('artisan')}>Artisan</button>

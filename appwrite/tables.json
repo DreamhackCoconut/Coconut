@@ -18,7 +18,7 @@
       { "key": "production_capacity_hours_per_day", "type": "double", "required": true },
       { "key": "recent_impressions", "type": "integer", "required": true },
       { "key": "rating", "type": "double", "required": true },
-      { "key": "avatar_url", "type": "url", "required": true }
+      { "key": "avatar_url", "type": "varchar", "size": 2048, "required": true }
     ],
     "indexes": [
       { "key": "slug", "type": "unique", "columns": ["slug"] }
@@ -50,7 +50,7 @@
       { "key": "height_cm", "type": "double", "required": true },
       { "key": "fragile", "type": "boolean", "required": true },
       { "key": "stackable", "type": "boolean", "required": true },
-      { "key": "image_url", "type": "url", "required": true },
+      { "key": "image_url", "type": "varchar", "size": 2048, "required": true },
       { "key": "active", "type": "boolean", "required": true }
     ],
     "indexes": [

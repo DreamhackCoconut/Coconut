@@ -1,4 +1,5 @@
 import { DEMO_CARTONS } from '@/lib/data/seed';
+import { clamp } from '@/lib/config/logistics';
 import type { CartLine, CartonProfile, PackedBox, PackedItem, PackingResult, Product } from '@/lib/domain/types';
 
 function paddedVolume(product: Product): number {
@@ -18,11 +19,9 @@ function fitsCarton(product: Product, carton: CartonProfile): boolean {
 }
 
 function cannotSafelyShare(boxItems: PackedItem[], product: Product): boolean {
-  if (product.fragile || boxItems.some((item) => item.fragile)) return true;
-  return boxItems.some((item) => {
-    const heavyNonStackable = item.weightKg > 2.2 && !item.stackable;
-    return (product.fragile && heavyNonStackable) || (item.fragile && product.weightKg > 2.2 && !product.stackable);
-  });
+  // Fragile pieces get their own carton. The old second branch was unreachable
+  // because the early return already rejected every fragile combination.
+  return product.fragile || boxItems.some((item) => item.fragile);
 }
 
 type WorkingBox = {
@@ -32,19 +31,37 @@ type WorkingBox = {
   actualWeightKg: number;
 };
 
-function sortScore(product: Product): number {
-  const largestVolume = DEMO_CARTONS[DEMO_CARTONS.length - 1].innerLengthCm * DEMO_CARTONS[DEMO_CARTONS.length - 1].innerWidthCm * DEMO_CARTONS[DEMO_CARTONS.length - 1].innerHeightCm;
-  const largestWeight = DEMO_CARTONS[DEMO_CARTONS.length - 1].maxWeightKg;
+function sortScore(product: Product, cartons: CartonProfile[]): number {
+  const largestCarton = cartons[cartons.length - 1];
+  const largestVolume = largestCarton.innerLengthCm * largestCarton.innerWidthCm * largestCarton.innerHeightCm;
+  const largestWeight = largestCarton.maxWeightKg;
   return Math.max(paddedVolume(product) / largestVolume, product.weightKg / largestWeight);
 }
 
 export function packCart(lines: CartLine[], products: Product[], cartons: CartonProfile[] = DEMO_CARTONS): PackingResult {
+  if (!cartons.length) throw new Error('At least one carton profile is required.');
+  for (const carton of cartons) {
+    if ([carton.innerLengthCm, carton.innerWidthCm, carton.innerHeightCm, carton.maxWeightKg].some((value) => !Number.isFinite(value) || value <= 0)) {
+      throw new Error(`Carton ${carton.code} has invalid dimensions or weight capacity.`);
+    }
+    if ([carton.packagingWeightKg, carton.packagingCostUsd].some((value) => !Number.isFinite(value) || value < 0)) {
+      throw new Error(`Carton ${carton.code} has invalid packaging values.`);
+    }
+  }
   const productById = new Map(products.map((product) => [product.id, product]));
   const expanded: PackedItem[] = [];
 
   for (const line of lines) {
     const product = productById.get(line.productId);
-    if (!product || line.quantity <= 0) continue;
+    if (!product) throw new Error(`Product ${line.productId} was not found in the catalog.`);
+    if (!Number.isInteger(line.quantity) || line.quantity <= 0) throw new Error(`Quantity for ${line.productId} must be a positive integer.`);
+    const productValues = [product.weightKg, product.lengthCm, product.widthCm, product.heightCm, product.priceUsd, product.unitCostUsd, product.productionHours];
+    if (productValues.some((value) => !Number.isFinite(value)) || [product.lengthCm, product.widthCm, product.heightCm].some((value) => value <= 0) || product.weightKg < 0) {
+      throw new Error(`Product ${product.id} has invalid physical dimensions or weight.`);
+    }
+    if (!cartons.some((carton) => fitsCarton(product, carton) && product.weightKg + carton.packagingWeightKg <= carton.maxWeightKg)) {
+      throw new Error(`${product.name} does not fit any available carton.`);
+    }
     for (let quantityIndex = 0; quantityIndex < line.quantity; quantityIndex += 1) {
       expanded.push({
         itemId: `${product.id}-${quantityIndex + 1}`,
@@ -65,7 +82,7 @@ export function packCart(lines: CartLine[], products: Product[], cartons: Carton
   const sorted = [...expanded].sort((a, b) => {
     const aProduct = productById.get(a.productId);
     const bProduct = productById.get(b.productId);
-    return (bProduct ? sortScore(bProduct) : 0) - (aProduct ? sortScore(aProduct) : 0);
+    return (bProduct ? sortScore(bProduct, cartons) : 0) - (aProduct ? sortScore(aProduct, cartons) : 0);
   });
   const boxes: WorkingBox[] = [];
 
@@ -81,7 +98,7 @@ export function packCart(lines: CartLine[], products: Product[], cartons: Carton
         fits &&
         !cannotSafelyShare(box.items, product) &&
         box.paddedVolumeCm3 + item.paddedVolumeCm3 <= maxVolume &&
-        box.actualWeightKg + item.weightKg <= box.carton.maxWeightKg
+        box.actualWeightKg + item.weightKg + box.carton.packagingWeightKg <= box.carton.maxWeightKg
       ) {
         box.items.push(item);
         box.paddedVolumeCm3 += item.paddedVolumeCm3;
@@ -92,8 +109,9 @@ export function packCart(lines: CartLine[], products: Product[], cartons: Carton
     }
 
     if (!placed) {
-      const compatible = cartons.filter((carton) => fitsCarton(product, carton) && item.weightKg <= carton.maxWeightKg);
-      const carton = compatible[0] ?? cartons[cartons.length - 1];
+      const compatible = cartons.filter((carton) => fitsCarton(product, carton) && item.weightKg + carton.packagingWeightKg <= carton.maxWeightKg);
+      const carton = compatible[0];
+      if (!carton) throw new Error(`${product.name} does not fit any available carton.`);
       boxes.push({ carton, items: [item], paddedVolumeCm3: item.paddedVolumeCm3, actualWeightKg: item.weightKg });
     }
   }
@@ -107,7 +125,7 @@ export function packCart(lines: CartLine[], products: Product[], cartons: Carton
       actualWeightKg: Number((box.actualWeightKg + box.carton.packagingWeightKg).toFixed(3)),
       shippingWeightKg: Number(shippingWeightKg.toFixed(3)),
       paddedVolumeCm3: Number(box.paddedVolumeCm3.toFixed(1)),
-      utilization: Number(Math.max(box.paddedVolumeCm3 / cartonVolume, box.actualWeightKg / box.carton.maxWeightKg).toFixed(3)),
+      utilization: Number(clamp(Math.max(box.paddedVolumeCm3 / cartonVolume, (box.actualWeightKg + box.carton.packagingWeightKg) / box.carton.maxWeightKg)).toFixed(3)),
       dimensions: [box.carton.innerLengthCm, box.carton.innerWidthCm, box.carton.innerHeightCm],
     };
   });

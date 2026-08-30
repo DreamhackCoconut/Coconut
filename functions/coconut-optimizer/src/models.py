@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from math import isfinite
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -9,6 +10,12 @@ class Point(BaseModel):
     latitude: float
     longitude: float
     label: str | None = None
+
+    @model_validator(mode="after")
+    def valid_coordinates(self) -> "Point":
+        if not isfinite(self.latitude) or not -90 <= self.latitude <= 90 or not isfinite(self.longitude) or not -180 <= self.longitude <= 180:
+            raise ValueError("latitude and longitude must be finite and within geographic bounds")
+        return self
 
 
 class Stop(BaseModel):
@@ -23,6 +30,8 @@ class Stop(BaseModel):
 
     @model_validator(mode="after")
     def valid_window(self) -> "Stop":
+        if not isfinite(self.latitude) or not -90 <= self.latitude <= 90 or not isfinite(self.longitude) or not -180 <= self.longitude <= 180:
+            raise ValueError("latitude and longitude must be finite and within geographic bounds")
         if self.latestMinute < self.earliestMinute:
             raise ValueError("latestMinute must be greater than or equal to earliestMinute")
         return self
@@ -32,6 +41,12 @@ class Vehicle(BaseModel):
     id: str = Field(min_length=1, max_length=80)
     maxWeightKg: float = Field(gt=0, le=1000)
     maxVolumeM3: float = Field(gt=0, le=100)
+
+    @model_validator(mode="after")
+    def finite_capacity(self) -> "Vehicle":
+        if not isfinite(self.maxWeightKg) or not isfinite(self.maxVolumeM3):
+            raise ValueError("vehicle capacity must be finite")
+        return self
 
 
 class OptimizationRequest(BaseModel):

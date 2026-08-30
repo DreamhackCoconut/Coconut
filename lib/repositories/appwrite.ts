@@ -1,7 +1,8 @@
 import { Client, ID, Query, TablesDB } from 'node-appwrite';
 import { getDemoBatchSnapshot, getDemoDepartures, getProductById, getProductBySlug, getSellerById, DEMO_PRODUCTS, DEMO_SELLERS } from '@/lib/data/seed';
-import type { BatchSnapshot, CartLine, Departure, Product, Seller } from '@/lib/domain/types';
+import type { BatchSnapshot, CartLine, Departure, GeoPoint, Product, Seller } from '@/lib/domain/types';
 import type { DemoOrderInput, MarketplaceRepository } from '@/lib/repositories/types';
+import { packCart } from '@/lib/engines/packing';
 
 type AppwriteRow = Record<string, unknown> & { $id?: string; $createdAt?: string };
 
@@ -26,6 +27,16 @@ function asNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function asBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    if (value.toLowerCase() === 'true' || value === '1') return true;
+    if (value.toLowerCase() === 'false' || value === '0') return false;
+  }
+  if (typeof value === 'number') return value !== 0;
+  return fallback;
+}
+
 function asJsonArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.map(String);
   if (typeof value !== 'string') return [];
@@ -45,6 +56,13 @@ function asJson<T>(value: unknown, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function asGeoPoints(value: unknown, fallback: GeoPoint[]): GeoPoint[] {
+  const parsed = asJson<unknown>(value, undefined);
+  if (!Array.isArray(parsed)) return fallback;
+  const points = parsed.filter((point): point is GeoPoint => Boolean(point && typeof point === 'object' && Number.isFinite((point as GeoPoint).latitude) && (point as GeoPoint).latitude >= -90 && (point as GeoPoint).latitude <= 90 && Number.isFinite((point as GeoPoint).longitude) && (point as GeoPoint).longitude >= -180 && (point as GeoPoint).longitude <= 180));
+  return points.length === parsed.length ? points : fallback;
 }
 
 function mapSeller(row: AppwriteRow): Seller {
@@ -84,10 +102,10 @@ function mapProduct(row: AppwriteRow): Product {
     lengthCm: asNumber(row.length_cm),
     widthCm: asNumber(row.width_cm),
     heightCm: asNumber(row.height_cm),
-    fragile: Boolean(row.fragile),
-    stackable: Boolean(row.stackable),
+    fragile: asBoolean(row.fragile, false),
+    stackable: asBoolean(row.stackable, false),
     imageUrl: String(row.image_url ?? ''),
-    active: row.active !== false,
+    active: asBoolean(row.active, true),
   };
 }
 
@@ -107,8 +125,8 @@ function mapDeparture(row: AppwriteRow, fallback: Departure): Departure {
     variableCostPerKg: asNumber(row.variable_cost_per_kg, fallback.variableCostPerKg),
     variableCostPerM3: asNumber(row.variable_cost_per_m3, fallback.variableCostPerM3),
     destinationZone: String(row.destination_zone ?? fallback.destinationZone),
-    status: String(row.status ?? fallback.status) as Departure['status'],
-    routePoints: asJson(row.route_points_json ?? row.route_points, fallback.routePoints),
+    status: row.status === 'open' || row.status === 'limited' || row.status === 'closed' ? row.status : fallback.status,
+    routePoints: asGeoPoints(row.route_points_json ?? row.route_points, fallback.routePoints),
     weatherRisk: asNumber(row.weather_risk, fallback.weatherRisk),
     weatherLabel: String(row.weather_label ?? fallback.weatherLabel),
   };
@@ -140,8 +158,15 @@ export class AppwriteMarketplaceRepository implements MarketplaceRepository {
   constructor(private readonly tablesDB: TablesDB, private readonly databaseId: string) {}
 
   private async list(tableId: string, queries: string[] = []): Promise<AppwriteRow[]> {
-    const result = await this.tablesDB.listRows({ databaseId: this.databaseId, tableId, queries: [...queries, Query.limit(100)] });
-    return rowsFrom(result);
+    const rows: AppwriteRow[] = [];
+    let offset = 0;
+    while (true) {
+      const result = await this.tablesDB.listRows({ databaseId: this.databaseId, tableId, queries: [...queries, Query.limit(100), Query.offset(offset)] });
+      const page = rowsFrom(result);
+      rows.push(...page);
+      if (page.length < 100) return rows;
+      offset += page.length;
+    }
   }
 
   private async get(tableId: string, rowId: string): Promise<AppwriteRow | undefined> {
@@ -229,7 +254,7 @@ export class AppwriteMarketplaceRepository implements MarketplaceRepository {
         currentWeightKg: asNumber(row.current_weight_kg, fallback.currentWeightKg),
         currentVolumeM3: asNumber(row.current_volume_m3, fallback.currentVolumeM3),
         orderCount: asNumber(row.order_count, fallback.orderCount),
-        participatingSellerIds: asJsonArray(row.participating_seller_ids_json ?? row.participating_seller_ids),
+        participatingSellerIds: asJsonArray(row.participating_seller_ids_json ?? row.participating_seller_ids).length ? asJsonArray(row.participating_seller_ids_json ?? row.participating_seller_ids) : fallback.participatingSellerIds,
         weatherRisk: asNumber(row.weather_risk, fallback.weatherRisk),
         weatherLabel: String(row.weather_label ?? fallback.weatherLabel),
         estimatedLocalPickupCostUsd: asNumber(row.estimated_local_pickup_cost_usd, fallback.estimatedLocalPickupCostUsd),
@@ -257,7 +282,33 @@ export class AppwriteMarketplaceRepository implements MarketplaceRepository {
 
   async createDemoOrder(input: DemoOrderInput) {
     const orderId = ID.unique();
-    const batchId = 'batch-friday-west-coast';
+    const batchId = input.batchId ?? 'batch-friday-west-coast';
+    const createdRows: Array<{ tableId: string; rowId: string }> = [];
+    const lineProductIds = new Set<string>();
+    const productSnapshots: Array<{ line: CartLine; row: AppwriteRow; product: Product }> = [];
+    for (const line of input.lines) {
+      if (lineProductIds.has(line.productId) || !Number.isInteger(line.quantity) || line.quantity <= 0) throw new Error('Order lines must contain unique, positive quantities.');
+      lineProductIds.add(line.productId);
+      const row = await this.get(TABLES.products, line.productId);
+      if (!row) throw new Error(`Product ${line.productId} is not available in the persistent catalog.`);
+      const product = mapProduct(row);
+      if (!product.active || product.inventory < line.quantity) throw new Error(`${product.name} does not have enough inventory.`);
+      productSnapshots.push({ line, row, product });
+    }
+    const packing = packCart(input.lines, productSnapshots.map((snapshot) => snapshot.product));
+    const batchRow = await this.get(TABLES.batches, batchId);
+    if (!batchRow) throw new Error(`Batch ${batchId} is not available in the persistent catalog.`);
+    const departureId = String(batchRow.departure_id ?? '');
+    const departureRow = departureId ? await this.get(TABLES.departures, departureId) : undefined;
+    if (!departureRow) throw new Error(`Departure ${departureId || 'unknown'} is not available in the persistent catalog.`);
+    const departureFallback = getDemoDepartures().find((departure) => departure.id === departureId) ?? getDemoDepartures()[0];
+    const departure = mapDeparture(departureRow, departureFallback);
+    const currentWeightKg = asNumber(batchRow.current_weight_kg);
+    const currentVolumeM3 = asNumber(batchRow.current_volume_m3);
+    if (currentWeightKg + packing.totalWeightKg > departure.maxWeightKg || currentVolumeM3 + packing.totalVolumeM3 > departure.maxVolumeM3) throw new Error('This shared departure no longer has enough capacity.');
+    const previousInventory = productSnapshots.map(({ product }) => product.inventory);
+    const previousBatch = { currentWeightKg, currentVolumeM3, orderCount: asNumber(batchRow.order_count), participatingSellerIds: asJsonArray(batchRow.participating_seller_ids_json ?? batchRow.participating_seller_ids) };
+    let stateMutationAttempted = false;
     try {
       await this.create(TABLES.orders, orderId, {
         status: 'demo_confirmed',
@@ -267,11 +318,39 @@ export class AppwriteMarketplaceRepository implements MarketplaceRepository {
         pooled_shipping_usd: input.pooledShippingUsd,
         created_at: new Date().toISOString(),
       });
-      await Promise.all(input.lines.map((line) => this.create(TABLES.orderItems, ID.unique(), { order_id: orderId, product_id: line.productId, quantity: line.quantity })));
-      await this.create(TABLES.batchOrders, ID.unique(), { batch_id: batchId, order_id: orderId });
+      createdRows.push({ tableId: TABLES.orders, rowId: orderId });
+      for (const line of input.lines) {
+        const rowId = ID.unique();
+        await this.create(TABLES.orderItems, rowId, { order_id: orderId, product_id: line.productId, quantity: line.quantity });
+        createdRows.push({ tableId: TABLES.orderItems, rowId });
+      }
+      const batchOrderId = ID.unique();
+      await this.create(TABLES.batchOrders, batchOrderId, { batch_id: batchId, order_id: orderId });
+      createdRows.push({ tableId: TABLES.batchOrders, rowId: batchOrderId });
+      stateMutationAttempted = true;
+      for (const { line, product } of productSnapshots) {
+        await this.update(TABLES.products, product.id, { inventory: product.inventory - line.quantity });
+      }
+      const sellerIds = [...new Set([...previousBatch.participatingSellerIds, ...productSnapshots.map(({ product }) => product.sellerId)])];
+      await this.update(TABLES.batches, batchId, {
+        current_weight_kg: currentWeightKg + packing.totalWeightKg,
+        current_volume_m3: currentVolumeM3 + packing.totalVolumeM3,
+        order_count: previousBatch.orderCount + 1,
+        participating_seller_ids_json: JSON.stringify(sellerIds),
+      });
       return { orderId, batchId };
-    } catch {
-      return { orderId: `demo-order-${Date.now()}`, batchId };
+    } catch (error) {
+      if (stateMutationAttempted) {
+        await Promise.all(productSnapshots.map(({ product }, index) => this.update(TABLES.products, product.id, { inventory: previousInventory[index] }).catch(() => undefined)));
+        await this.update(TABLES.batches, batchId, {
+          current_weight_kg: previousBatch.currentWeightKg,
+          current_volume_m3: previousBatch.currentVolumeM3,
+          order_count: previousBatch.orderCount,
+          participating_seller_ids_json: JSON.stringify(previousBatch.participatingSellerIds),
+        }).catch(() => undefined);
+      }
+      await Promise.all(createdRows.reverse().map(({ tableId, rowId }) => this.tablesDB.deleteRow({ databaseId: this.databaseId, tableId, rowId }).catch(() => undefined)));
+      throw error;
     }
   }
 

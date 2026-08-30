@@ -1,4 +1,5 @@
 import { Account, Client, ID } from 'appwrite';
+import { LOGISTICS } from '@/lib/config/logistics';
 import type { CartLine, Product, ProductCategory, Seller } from '@/lib/domain/types';
 
 const ACTIVE_ACCOUNT_KEY = 'coconut.active-account';
@@ -36,6 +37,29 @@ type AccountPrefs = Record<string, unknown> & {
   coconutSellerLocation?: CoconutAccount['sellerLocation'];
   coconutSellerListings?: SellerListing[];
 };
+
+function normalizedCart(value: unknown): CartLine[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  return value.filter((line): line is CartLine => {
+    if (!line || typeof line !== 'object') return false;
+    const candidate = line as Partial<CartLine>;
+    const quantity = candidate.quantity;
+    if (typeof candidate.productId !== 'string' || !candidate.productId || typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity < 1 || quantity > LOGISTICS.maxCartQuantity || seen.has(candidate.productId)) return false;
+    seen.add(candidate.productId);
+    return true;
+  }).slice(0, LOGISTICS.maxCartLines);
+}
+
+function validSellerListing(value: unknown): value is SellerListing {
+  if (!value || typeof value !== 'object') return false;
+  const listing = value as Partial<SellerListing>;
+  return Boolean(listing.ownerId && listing.seller?.id && listing.product?.id && listing.product.sellerId === listing.seller.id);
+}
+
+function validLocalAccount(value: unknown): value is LocalAccount {
+  return Boolean(value && typeof value === 'object' && typeof (value as LocalAccount).id === 'string' && typeof (value as LocalAccount).name === 'string' && typeof (value as LocalAccount).email === 'string' && typeof (value as LocalAccount).passwordHash === 'string');
+}
 
 function browserStorage(): Storage | undefined {
   return typeof window === 'undefined' ? undefined : window.localStorage;
@@ -108,16 +132,21 @@ export async function getCurrentAccount(): Promise<CoconutAccount | null> {
       // A configured Appwrite project can still be used in local demo mode while it is empty.
     }
   }
-  const active = readJson<LocalAccount | null>(ACTIVE_ACCOUNT_KEY, null);
-  return active ? accountFromLocal(active) : null;
+  const active = readJson<unknown>(ACTIVE_ACCOUNT_KEY, null);
+  return validLocalAccount(active) ? accountFromLocal(active) : null;
 }
 
 export async function createAccount(input: { name: string; email: string; password: string }): Promise<CoconutAccount> {
+  const name = input.name.trim();
+  const email = input.email.trim();
+  if (name.length < 2 || name.length > 120) throw new Error('Please enter a name between 2 and 120 characters.');
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Please enter a valid email address.');
+  if (input.password.length < 8 || input.password.length > 128) throw new Error('Your password must be between 8 and 128 characters.');
   const account = appwriteAccount();
   if (account) {
     try {
-      await account.create({ userId: ID.unique(), email: input.email.trim(), password: input.password, name: input.name.trim() });
-      await account.createEmailPasswordSession({ email: input.email.trim(), password: input.password });
+      await account.create({ userId: ID.unique(), email, password: input.password, name });
+      await account.createEmailPasswordSession({ email, password: input.password });
       const user = await account.get();
       return accountFromAppwrite(user, await getPrefs(account));
     } catch (error) {
@@ -126,19 +155,22 @@ export async function createAccount(input: { name: string; email: string; passwo
     }
   }
 
-  const accounts = readJson<LocalAccount[]>(LOCAL_ACCOUNTS_KEY, []);
-  if (accounts.some((candidate) => candidate.email.toLowerCase() === input.email.trim().toLowerCase())) throw new Error('An account with that email already exists.');
-  const local: LocalAccount = { id: `local-${Date.now().toString(36)}`, name: input.name.trim(), email: input.email.trim(), source: 'local', passwordHash: await digest(input.password) };
+  const storedAccounts = readJson<unknown>(LOCAL_ACCOUNTS_KEY, []);
+  const accounts = Array.isArray(storedAccounts) ? storedAccounts.filter(validLocalAccount) : [];
+  if (accounts.some((candidate) => candidate.email.toLowerCase() === email.toLowerCase())) throw new Error('An account with that email already exists.');
+  const local: LocalAccount = { id: `local-${Date.now().toString(36)}`, name, email, source: 'local', passwordHash: await digest(input.password) };
   writeJson(LOCAL_ACCOUNTS_KEY, [...accounts, local]);
   writeJson(ACTIVE_ACCOUNT_KEY, local);
   return accountFromLocal(local);
 }
 
 export async function signIn(input: { email: string; password: string }): Promise<CoconutAccount> {
+  const email = input.email.trim();
+  if (!/^\S+@\S+\.\S+$/.test(email) || !input.password) throw new Error('Please enter your email and password.');
   const account = appwriteAccount();
   if (account) {
     try {
-      await account.createEmailPasswordSession({ email: input.email.trim(), password: input.password });
+      await account.createEmailPasswordSession({ email, password: input.password });
       const user = await account.get();
       return accountFromAppwrite(user, await getPrefs(account));
     } catch {
@@ -146,7 +178,8 @@ export async function signIn(input: { email: string; password: string }): Promis
     }
   }
 
-  const candidate = readJson<LocalAccount[]>(LOCAL_ACCOUNTS_KEY, []).find((item) => item.email.toLowerCase() === input.email.trim().toLowerCase());
+  const storedAccounts = readJson<unknown>(LOCAL_ACCOUNTS_KEY, []);
+  const candidate = Array.isArray(storedAccounts) ? storedAccounts.filter(validLocalAccount).find((item) => item.email.toLowerCase() === email.toLowerCase()) : undefined;
   if (!candidate || candidate.passwordHash !== await digest(input.password)) throw new Error('We could not match that email and password.');
   writeJson(ACTIVE_ACCOUNT_KEY, candidate);
   return accountFromLocal(candidate);
@@ -166,33 +199,37 @@ export async function loadSavedCart(accountId?: string): Promise<CartLine[] | un
   const account = accountId ? appwriteAccount() : undefined;
   if (account) {
     const prefs = await getPrefs(account);
-    if (Array.isArray(prefs.coconutCart)) return prefs.coconutCart;
+    if (Array.isArray(prefs.coconutCart)) return normalizedCart(prefs.coconutCart);
   }
-  return readJson<CartLine[] | undefined>(cartKey(accountId), undefined);
+  const saved = readJson<unknown>(cartKey(accountId), undefined);
+  return Array.isArray(saved) ? normalizedCart(saved) : undefined;
 }
 
 export async function saveCart(accountId: string | undefined, lines: CartLine[]): Promise<void> {
-  writeJson(cartKey(accountId), lines);
+  const safeLines = normalizedCart(lines);
+  writeJson(cartKey(accountId), safeLines);
   if (!accountId) return;
   const account = appwriteAccount();
   if (!account) return;
   try {
     const prefs = await getPrefs(account);
-    await account.updatePrefs({ prefs: { ...prefs, coconutCart: lines } });
+    await account.updatePrefs({ prefs: { ...prefs, coconutCart: safeLines } });
   } catch {
     // Local persistence remains the deterministic fallback.
   }
 }
 
 export function getStoredSellerListings(): SellerListing[] {
-  return readJson<SellerListing[]>(SELLER_LISTINGS_KEY, []);
+  const stored = readJson<unknown>(SELLER_LISTINGS_KEY, []);
+  return Array.isArray(stored) ? stored.filter(validSellerListing) : [];
 }
 
 function mergeSellerListings(incoming: SellerListing[]) {
-  if (!incoming.length) return;
+  const safeIncoming = incoming.filter(validSellerListing);
+  if (!safeIncoming.length) return;
   const existing = getStoredSellerListings();
   const merged = [...existing];
-  for (const listing of incoming) {
+  for (const listing of safeIncoming) {
     const index = merged.findIndex((candidate) => candidate.product.id === listing.product.id);
     if (index === -1) merged.push(listing);
     else merged[index] = listing;
@@ -201,6 +238,11 @@ function mergeSellerListings(incoming: SellerListing[]) {
 }
 
 export async function createSellerListing(accountProfile: CoconutAccount, input: SellerListingInput): Promise<SellerListing> {
+  const name = input.name.trim();
+  const description = input.description.trim();
+  if (name.length < 2 || name.length > 180 || description.length < 10 || description.length > 2_000) throw new Error('Add a name and a description before publishing your listing.');
+  if (!Number.isFinite(input.priceUsd) || input.priceUsd <= 0 || !Number.isInteger(input.inventory) || input.inventory < 0 || input.inventory > 100_000 || !Number.isFinite(input.weightKg) || input.weightKg <= 0) throw new Error('Check the price, inventory, and package weight.');
+  if (!Number.isFinite(input.latitude) || input.latitude < -90 || input.latitude > 90 || !Number.isFinite(input.longitude) || input.longitude < -180 || input.longitude > 180 || !input.locationName.trim()) throw new Error('Add a valid pickup location.');
   const sellerId = `seller-${accountProfile.id.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || Date.now().toString(36)}`;
   const productId = `product-${accountProfile.id.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 16) || 'member'}-${Date.now().toString(36)}`;
   const slug = `${input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'island-piece'}-${productId.slice(-6)}`;
@@ -222,9 +264,9 @@ export async function createSellerListing(accountProfile: CoconutAccount, input:
   const product: Product = {
     id: productId,
     sellerId,
-    name: input.name.trim(),
+    name,
     slug,
-    description: input.description.trim(),
+    description,
     category: input.category,
     tags: ['new listing', 'island-made'],
     materials: ['maker-selected'],

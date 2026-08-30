@@ -21,6 +21,22 @@ export const DEMO_VESSEL_PROFILE: VesselProfile = {
   operationalMaxSwellM: 2.5,
 };
 
+function safeNonNegative(value: number, fallback = 0): number {
+  return Number.isFinite(value) ? Math.max(0, value) : fallback;
+}
+
+function normalizeObservation(observation: WeatherObservation): WeatherObservation {
+  return {
+    waveHeightM: safeNonNegative(observation.waveHeightM),
+    wavePeriodS: safeNonNegative(observation.wavePeriodS),
+    swellHeightM: safeNonNegative(observation.swellHeightM),
+    swellPeriodS: safeNonNegative(observation.swellPeriodS),
+    windKph: safeNonNegative(observation.windKph),
+    gustKph: safeNonNegative(observation.gustKph),
+    precipitationMm: safeNonNegative(observation.precipitationMm),
+  };
+}
+
 export function demoMarineObservations(points: GeoPoint[], weatherRisk = 0.12): WeatherObservation[] {
   return points.map((_point, index) => ({
     waveHeightM: Number((1.05 + weatherRisk * 1.8 + index * 0.06).toFixed(2)),
@@ -34,16 +50,20 @@ export function demoMarineObservations(points: GeoPoint[], weatherRisk = 0.12): 
 }
 
 function thresholdRisk(observed: number, preferred: number, operational: number): number {
+  observed = safeNonNegative(observed);
+  preferred = Math.max(0.01, safeNonNegative(preferred, 0.01));
+  operational = Math.max(preferred, safeNonNegative(operational, preferred));
   if (observed <= preferred) return clamp(observed / Math.max(0.01, preferred) * 0.35);
   return clamp(0.35 + ((observed - preferred) / Math.max(0.01, operational - preferred)) * 0.65);
 }
 
 export function calculateWeatherRisk(observations: WeatherObservation[], vessel: VesselProfile = DEMO_VESSEL_PROFILE): WeatherRisk {
-  const pointRisks = observations.map((observation) => {
+  const normalizedObservations = observations.map(normalizeObservation);
+  const pointRisks = normalizedObservations.map((observation) => {
     const wave = thresholdRisk(observation.waveHeightM, vessel.preferredMaxWaveM, vessel.operationalMaxWaveM);
     const wind = thresholdRisk(observation.windKph, vessel.preferredMaxWindKph, vessel.operationalMaxWindKph);
     const swell = thresholdRisk(observation.swellHeightM, vessel.preferredMaxSwellM, vessel.operationalMaxSwellM);
-    const gust = clamp(observation.gustKph / vessel.operationalMaxWindKph);
+    const gust = clamp(observation.gustKph / Math.max(0.01, safeNonNegative(vessel.operationalMaxWindKph, 0.01)));
     const precipitation = clamp(observation.precipitationMm / 25);
     return 0.45 * wave + 0.25 * wind + 0.15 * swell + 0.1 * gust + 0.05 * precipitation;
   });
@@ -54,6 +74,6 @@ export function calculateWeatherRisk(observations: WeatherObservation[], vessel:
     risk: Number(risk.toFixed(3)),
     label,
     explanation: `Route risk combines wave, wind, swell, gust, and precipitation against the ${vessel.name}'s preferred and operational limits.`,
-    observations,
+    observations: normalizedObservations,
   };
 }

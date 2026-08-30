@@ -2,7 +2,6 @@ import { LOGISTICS, clamp, roundMoney } from '@/lib/config/logistics';
 import { getDemoBatchSnapshot, getDemoDepartures, getSellerById } from '@/lib/data/seed';
 import type { BatchSnapshot, CartLine, Destination, Product, Recommendation, RecommendationComponents, Seller } from '@/lib/domain/types';
 import { quoteCart } from '@/lib/engines/batching';
-import { packCart } from '@/lib/engines/packing';
 
 const RELATED_CATEGORIES: Record<string, string[]> = {
   Jewelry: ['Textiles', 'Prints'],
@@ -13,7 +12,7 @@ const RELATED_CATEGORIES: Record<string, string[]> = {
   Prints: ['Textiles', 'Jewelry'],
 };
 
-function jaccard(left: string[], right: string[]): number {
+function jaccard(left: string[] = [], right: string[] = []): number {
   const a = new Set(left.map((value) => value.toLowerCase()));
   const b = new Set(right.map((value) => value.toLowerCase()));
   const union = new Set([...a, ...b]).size;
@@ -31,14 +30,16 @@ function productSimilarity(candidate: Product, cartProducts: Product[]): number 
 }
 
 function sellerFairness(candidate: Seller, sellers: Seller[]): number {
+  if (!sellers.length) return 0;
   const raw = 1 / Math.sqrt(candidate.recentImpressions + 1);
   const all = sellers.map((seller) => 1 / Math.sqrt(seller.recentImpressions + 1));
-  return clamp(raw / Math.max(...all));
+  return clamp(raw / Math.max(...all, 0.001));
 }
 
-function readiness(candidate: Product, batch: BatchSnapshot, departureCutoff: string): number {
+function readiness(candidate: Product, _batch: BatchSnapshot, departureCutoff: string, now: Date): number {
   if (candidate.inventory > 0) return 1;
-  const availableHours = Math.max(0, (new Date(departureCutoff).getTime() - Date.now()) / 3_600_000);
+  const availableHours = Math.max(0, (new Date(departureCutoff).getTime() - now.getTime()) / 3_600_000);
+  if (!availableHours) return 0;
   if (candidate.productionHours <= availableHours * 0.6) return 1;
   if (candidate.productionHours >= availableHours) return 0;
   return clamp((availableHours - candidate.productionHours) / (availableHours * 0.4));
@@ -61,18 +62,25 @@ export function buildRecommendations(input: {
   products: Product[];
   sellers: Seller[];
   batch?: BatchSnapshot;
+  now?: Date;
 }): Recommendation[] {
   const batch = input.batch ?? getDemoBatchSnapshot();
-  const departures = getDemoDepartures();
-  const currentQuote = quoteCart(input.lines, input.destination, input.products, batch, departures);
+  const now = input.now ?? new Date();
+  const departures = getDemoDepartures(now);
+  const currentQuote = quoteCart(input.lines, input.destination, input.products, batch, departures, now);
   const cartIds = new Set(input.lines.map((line) => line.productId));
   const cartProducts = input.lines.map((line) => input.products.find((product) => product.id === line.productId)).filter((product): product is Product => Boolean(product));
-  const currentPacking = packCart(input.lines, input.products);
+  const currentPacking = currentQuote.packing;
   const candidates = input.products.filter((product) => product.active && product.inventory > 0 && !cartIds.has(product.id));
 
   return candidates.map((candidate) => {
     const candidateLines = [...input.lines, { productId: candidate.id, quantity: 1 }];
-    const candidateQuote = quoteCart(candidateLines, input.destination, input.products, batch, departures);
+    let candidateQuote;
+    try {
+      candidateQuote = quoteCart(candidateLines, input.destination, input.products, batch, departures, now);
+    } catch {
+      return undefined;
+    }
     const rawDelta = candidateQuote.shipping.pooledUsd - currentQuote.shipping.pooledUsd;
     const shippingDeltaUsd = Math.abs(rawDelta) <= LOGISTICS.negligibleShippingDeltaUsd ? 0 : roundMoney(Math.max(0, rawDelta));
     const productRelevance = productSimilarity(candidate, cartProducts);
@@ -81,12 +89,12 @@ export function buildRecommendations(input: {
     const volumeAfter = candidateQuote.packing.totalVolumeM3;
     const utilizationImprovement = clamp((volumeAfter - volumeBefore) / Math.max(0.01, 0.12 - volumeBefore));
     const sameDepartureCompatibility = candidateQuote.recommendedBatch.departureId === currentQuote.recommendedBatch.departureId ? 1 : 0;
-    const destinationCompatibility = candidateQuote.recommendedBatch.departureId ? 1 : 0;
-    const batchBenefit = clamp(0.5 * sameDepartureCompatibility + 0.2 * destinationCompatibility + 0.3 * utilizationImprovement);
+    const batchBenefit = clamp(0.7 * sameDepartureCompatibility + 0.3 * utilizationImprovement);
     const margin = candidate.priceUsd > 0 ? (candidate.priceUsd - candidate.unitCostUsd) / candidate.priceUsd : 0;
     const marginQuality = clamp(margin / 0.5);
-    const productionReadiness = readiness(candidate, batch, currentQuote.recommendedBatch.cutoffAt);
-    const seller = getSellerById(candidate.sellerId) ?? input.sellers[0];
+    const productionReadiness = readiness(candidate, batch, currentQuote.recommendedBatch.cutoffAt, now);
+    const seller = input.sellers.find((item) => item.id === candidate.sellerId) ?? getSellerById(candidate.sellerId);
+    if (!seller) return undefined;
     const fairness = sellerFairness(seller, input.sellers);
     const components = { productRelevance, shippingEfficiency, batchBenefit, marginQuality, productionReadiness, sellerFairness: fairness };
     const score = 0.3 * productRelevance + 0.25 * shippingEfficiency + 0.15 * batchBenefit + 0.1 * marginQuality + 0.1 * productionReadiness + 0.1 * fairness;
@@ -97,5 +105,5 @@ export function buildRecommendations(input: {
       components,
       reasons: explain(candidate, components, shippingDeltaUsd, currentQuote.recommendedBatch.departureAt, cartProducts),
     };
-  }).sort((a, b) => b.score - a.score).slice(0, 6);
+  }).filter((recommendation): recommendation is Recommendation => Boolean(recommendation)).sort((a, b) => b.score - a.score).slice(0, 6);
 }

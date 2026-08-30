@@ -1,7 +1,7 @@
 import { Functions } from 'node-appwrite';
 import type { GeoPoint, RouteOptimizationResult, RouteStop } from '@/lib/domain/types';
 import { createAppwriteServerClient } from '@/lib/repositories/appwrite';
-import type { PickupVehicle } from '@/lib/engines/routing';
+import { validateRouteOptimizationResult, type PickupVehicle } from '@/lib/engines/routing';
 
 export async function invokeOrToolsOptimizer(input: { distanceMatrixMeters: number[][]; durationMatrixSeconds: number[][]; hub: GeoPoint; stops: RouteStop[]; vehicles: PickupVehicle[] }): Promise<RouteOptimizationResult | undefined> {
   const functionId = process.env.APPWRITE_OPTIMIZER_FUNCTION_ID;
@@ -18,7 +18,9 @@ export async function invokeOrToolsOptimizer(input: { distanceMatrixMeters: numb
     if (!responseBody) return undefined;
     const payload = JSON.parse(responseBody) as Partial<RouteOptimizationResult>;
     if (payload.optimizerMode !== 'ortools' || !Array.isArray(payload.routes) || payload.routes.length === 0) return undefined;
-    return payload as RouteOptimizationResult;
+    const result = payload as RouteOptimizationResult;
+    validateRouteOptimizationResult(result, input.stops, input.vehicles);
+    return result;
   } catch {
     return undefined;
   }

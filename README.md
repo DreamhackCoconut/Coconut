@@ -120,7 +120,7 @@ For a cloud project, use the checked-in `appwrite.config.json`, `appwrite/functi
 
 ### Automatic Appwrite deployment
 
-The `Coconut checks` workflow validates every pull request and push to `main`. A push to `main` deploys the checked-in TablesDB schema, both Appwrite Functions, and the Appwrite Site in that order. The workflow installs a pinned Appwrite CLI version and never deploys from pull requests.
+The `Coconut checks` workflow validates every pull request and push to `main`. A push to `main` first compares the changed paths, then deploys only the affected Appwrite resource groups: `appwrite/tables.json` changes deploy TablesDB, function or shared backend changes deploy the Functions, and app or frontend changes deploy the Site. Changes to `appwrite.config.json` deploy all three. Documentation-only and workflow-only changes do not start an Appwrite deployment. The workflow installs a pinned Appwrite CLI version and never deploys from pull requests.
 
 In the repository's **Settings → Secrets and variables → Actions**, add these secrets:
 

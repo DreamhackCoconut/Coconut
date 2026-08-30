@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Box, Check, CircleCheck, Clock, Eye, Feather, Hammer, MapPin, Package, PackageCheck, Plus, Radio, Route as RouteIcon, Search, ShipWheel, Sparkles, UsersRound } from 'lucide-react';
+import { ArrowRight, Box, Check, CircleCheck, Clock, Eye, Feather, Hammer, MapPin, Package, PackageCheck, Plus, Radio, Route as RouteIcon, Search, ShipWheel, UsersRound } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BatchSnapshot, CartLine, Departure, Product, ProductCategory, Seller } from '@/lib/domain/types';
@@ -38,57 +38,53 @@ function ProductCard({
   onQuickView: (product: Product) => void;
 }) {
   return (
-    <article
-      className="product-card"
-      style={{ ['--stagger' as string]: index }}
-      onClick={() => onQuickView(product)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onQuickView(product); }}
-      aria-label={`View ${product.name}`}
-    >
-      <div className="product-image">
-        <Image
-          src={product.imageUrl}
-          alt={product.name}
-          fill
-          sizes="(max-width: 560px) 50vw, (max-width: 1080px) 33vw, 25vw"
-          priority={index < 4}
-          unoptimized
-        />
-        <span className="product-tag">{product.category}</span>
-      </div>
-
-      <div className="product-card-body">
-        <div>
-          <div className="seller-line">
-            {seller ? <Image className="seller-avatar" src={seller.avatarUrl} alt="" width={18} height={18} unoptimized /> : null}
-            <span>{seller?.name ?? 'Island artisan'}</span>
-          </div>
-          <h3>{product.name}</h3>
-          <p>{product.description}</p>
-
-          <div className="product-sub-info">
-            <span className="material-line">{product.materials[0] || 'Handcrafted'}</span>
-            <span className="weight-fit-line">· {product.weightKg} kg</span>
-          </div>
+    <article className="product-card" style={{ ['--stagger' as string]: index }}>
+      <button
+        className="product-card-main"
+        type="button"
+        onClick={() => onQuickView(product)}
+        aria-label={`View details for ${product.name}`}
+      >
+        <div className="product-image">
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            sizes="(max-width: 560px) 50vw, (max-width: 1080px) 33vw, 25vw"
+            priority={index < 4}
+            unoptimized
+          />
+          <span className="product-tag">{product.category}</span>
         </div>
 
-        <div className="product-meta">
-          <span className="price">${product.priceUsd}</span>
-          <button
-            className="add-icon pressable"
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAdd(product, e);
-            }}
-            aria-label={`Add ${product.name} to cart`}
-            title={added ? 'Add another' : 'Add to cart'}
-          >
-            {added ? <Check size={16} strokeWidth={2.4} /> : <Plus size={16} strokeWidth={2.4} />}
-          </button>
+        <div className="product-card-body">
+          <div>
+            <div className="seller-line">
+              {seller ? <Image className="seller-avatar" src={seller.avatarUrl} alt="" width={18} height={18} unoptimized /> : null}
+              <span>{seller?.name ?? 'Island artisan'}</span>
+            </div>
+            <h3>{product.name}</h3>
+            <p>{product.description}</p>
+
+            <div className="product-sub-info">
+              <span className="material-line">{product.materials[0] || 'Handcrafted'}</span>
+              <span className="weight-fit-line">· {product.weightKg} kg</span>
+            </div>
+          </div>
         </div>
+      </button>
+
+      <div className="product-meta">
+        <span className="price">${product.priceUsd}</span>
+        <button
+          className="add-icon pressable"
+          type="button"
+          onClick={(e) => onAdd(product, e)}
+          aria-label={`Add ${product.name} to cart`}
+          title={added ? 'Add another' : 'Add to cart'}
+        >
+          {added ? <Check size={16} strokeWidth={2.4} /> : <Plus size={16} strokeWidth={2.4} />}
+        </button>
       </div>
     </article>
   );
@@ -216,9 +212,9 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
           <span className="eyebrow">Rarotonga · Cook Islands</span>
           <h1 className="display motion-stagger">
             <span style={{ ['--stagger' as string]: 0 }}>Island-made.</span><br />
-            <em style={{ ['--stagger' as string]: 1 }}>Smarter shipped.</em>
+            <em style={{ ['--stagger' as string]: 1 }}>Moved together.</em>
           </h1>
-          <p className="lede">Discover work made close to the water, then let Coconut find the cleanest shared journey home.</p>
+          <p className="lede">Discover work made close to the water, then see the shared journey from pickup to home.</p>
           <div className="hero-actions">
             <button className="button-primary pressable" type="button" onClick={onOpenCart}>
               See the shared journey <ArrowRight size={15} />
@@ -233,8 +229,8 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         <aside className="hero-aside">
           <div>
             <div className="hero-aside-header">
-              <span className="eyebrow" style={{ color: '#8bd7d4' }}>Pacific Gateway</span>
-              <span className="radar-live-pill">VESSEL ACTIVE</span>
+              <span className="eyebrow">Pacific gateway</span>
+              <span className="radar-live-pill">Vessel active</span>
             </div>
 
             <div className="hero-aside-body">
@@ -286,8 +282,8 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         <ol className="how-grid">
           <li className="how-step"><span className="how-step-index">01</span><div><h3>Shop local</h3><p>Buy directly from island artisans and discover the story behind each piece.</p></div></li>
           <li className="how-step"><span className="how-step-index"><PackageCheck size={17} /></span><div><h3>Ship together</h3><p>Compatible orders share a departure and a fair slice of fixed freight.</p></div></li>
-          <li className="how-step"><span className="how-step-index"><Box size={17} /></span><div><h3>Pack smarter</h3><p>Carton fit and marginal shipping cost shape the next recommendation.</p></div></li>
-          <li className="how-step"><span className="how-step-index"><RouteIcon size={17} /></span><div><h3>Route smarter</h3><p>Pickup windows, vehicle capacity, and marine conditions inform the move.</p></div></li>
+          <li className="how-step"><span className="how-step-index"><Box size={17} /></span><div><h3>Pack with care</h3><p>Carton fit and marginal shipping cost shape each suggestion.</p></div></li>
+          <li className="how-step"><span className="how-step-index"><RouteIcon size={17} /></span><div><h3>Plan the pickup</h3><p>Pickup windows, vehicle capacity, and marine conditions shape the move.</p></div></li>
         </ol>
       </section>
 

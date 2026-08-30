@@ -6,7 +6,7 @@ Coconut
 
 ## Tagline
 
-Island-made. Smarter shipped.
+Made close. Moved together.
 
 ## One-sentence summary
 
@@ -32,7 +32,7 @@ Independent island businesses face small export volumes, costly fixed freight, f
 
 ## Solution
 
-Coordinate discovery, packing, pooled freight, recommendations, pickup routing, departures, and artisan intelligence in one explainable workflow.
+Coordinate discovery, packing, pooled freight, recommendations, pickup routing, departures, and maker planning in one explainable workflow.
 
 ## What we built
 
@@ -40,7 +40,7 @@ Marketplace, direct product pages, cart quote, dynamic pooled shipping, packing 
 
 ## How it works
 
-Shop local → ship together → pack smarter → route smarter → help artisans plan what can move.
+Shop local → ship together → pack with care → plan the pickup → help makers move what they make.
 
 ## Tech stack
 
@@ -56,7 +56,7 @@ Making the shipping result understandable while preserving real constraints, kee
 
 ## What we learned
 
-The most persuasive “AI” moment is concrete: a product recommendation becomes more useful when the user can see why it fits physically and financially.
+The most persuasive product moment is concrete: a recommendation becomes more useful when the buyer can see why it fits physically and financially.
 
 ## What’s next
 

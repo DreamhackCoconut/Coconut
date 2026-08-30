@@ -1,8 +1,8 @@
 # Judge Q&A
 
-### Where is the AI?
+### What powers the product?
 
-Coconut uses algorithmic intelligence rather than a generic chatbot: packing, recommendation ranking, shared-freight pricing, constrained vehicle routing, and weather-aware logistics decisions.
+Coconut uses explainable calculations rather than a generic chatbot: packing, recommendation ranking, shared-freight pricing, constrained vehicle routing, and weather-aware logistics decisions.
 
 ### Where is the dynamic pricing?
 
@@ -32,6 +32,6 @@ Provider reads degrade from live to fresh cache to stale cache to deterministic 
 
 A production system could add real cooperative schedules, richer merchant history, larger solver budgets, asynchronous optimization, learned ranking weights, and demand forecasting.
 
-### Does Coconut claim machine learning?
+### Can the calculations be explained?
 
-No. The current product uses explainable algorithms, optimization, ranking, and public/live data. Learned weights, embeddings, and contextual bandits are future possibilities.
+Yes. The current product uses explainable algorithms, optimization, ranking, and public/live data. Each recommendation, route, departure, and market note exposes the inputs that shaped it.

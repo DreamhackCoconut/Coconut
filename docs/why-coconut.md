@@ -9,4 +9,4 @@
 7. **Seller fairness matters.** One merchant should not dominate recommendations simply because it has more history.
 8. **The system is explainable.** Recommendation, route, departure, market, and price guidance decisions expose reasons.
 9. **The demo is visual.** The cart, map, utilization, and artisan queue make the network effect easy to present.
-10. **No generic chatbot is required.** Coconut’s intelligence is packing, ranking, optimization, and decision support grounded in real constraints.
+10. **Every decision has a visible reason.** Packing, ranking, optimization, and planning are grounded in real constraints.

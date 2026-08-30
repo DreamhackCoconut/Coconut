@@ -10,7 +10,7 @@ Small island makers can sell beautiful products online, but independent shipping
 
 ## 60 seconds
 
-Meet Coconut: island-made, smarter shipped. A customer adds a $32 Handwoven Coastal Basket and sees shared shipping fall from $28.20 solo to $19.12 pooled. Coconut then recommends Shell Earrings with a $0 shipping delta because it repacks the cart and measures marginal cost. Operators open the same shared batch, compare their baseline pickup loop with a Google OR-Tools route constrained by capacities and time windows, and see marine risk beside the departure choice. Artisans get a production queue, market opportunities, and explainable price guidance. Coconut coordinates the expensive part while each maker stays independent.
+Meet Coconut: made close, moved together. A customer adds a $32 Handwoven Coastal Basket and sees shared shipping fall from $28.20 solo to $19.12 pooled. Coconut then recommends Shell Earrings with a $0 shipping delta because it repacks the cart and measures marginal cost. Operators open the same shared batch, compare their baseline pickup loop with a Google OR-Tools route constrained by capacities and time windows, and see marine risk beside the departure choice. Artisans get a production queue, market opportunities, and explainable price guidance. Coconut coordinates the expensive part while each maker stays independent.
 
 ## 2 minutes
 

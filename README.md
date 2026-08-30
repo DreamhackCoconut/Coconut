@@ -1,6 +1,8 @@
 # Coconut
 
-**Island-made. Smarter shipped.**
+<img src="./public/coconut-logo.jpg" alt="Coconut logo" width="144" />
+
+**Made close. Moved together.**
 
 Coconut is a shipping-aware marketplace for remote-island artisans. It pools orders across independent makers, shares fixed freight costs, recommends products that fit the current parcel, optimizes island pickups, and uses marine conditions to help choose reliable departures.
 
@@ -42,7 +44,7 @@ Coconut then recommends **Shell Earrings — $14.00** with **+$0.00 estimated sh
 | Global customers | Destination-aware cart quotes and final-mile enrichment. |
 | Shipping optimization | Packing, batching, CVRPTW pickup routing, and weather-aware departures. |
 
-## What is actually intelligent?
+## What is calculated?
 
 - **Packing:** deterministic first-fit cartonization with dimensional rotation, weight limits, stackability, and fragile-item separation.
 - **Dynamic shipping:** fixed freight allocation plus variable weight/volume costs; a fuller compatible batch lowers each shipment’s share.
@@ -93,7 +95,7 @@ Provider reads follow **live → fresh cache → stale cache → deterministic d
 
 ## What the backend does
 
-When the public Appwrite function settings are present, the browser sends marketplace requests to `coconut-api`. That Node.js function reads and writes the Appwrite TablesDB repository, validates catalog inventory and event payloads, computes cartonization, pooled shipping, recommendations, seller intelligence, and demo orders, and caches optional provider results. Successful persistent demo orders update order items, inventory, and the selected batch snapshot; failed multi-row writes are compensated and surfaced instead of returning a fabricated success. The `coconut-optimizer` Python function receives only the validated route matrix and constraints when OR-Tools is available. The site falls back to the same deterministic engines locally whenever those settings are absent or a remote request fails, which is why the demo works without a live backend.
+When the public Appwrite function settings are present, the browser sends marketplace requests to `coconut-api`. That Node.js function reads and writes the Appwrite TablesDB repository, validates catalog inventory and event payloads, computes cartonization, pooled shipping, recommendations, maker planning data, and demo orders, and caches optional provider results. Successful persistent demo orders update order items, inventory, and the selected batch snapshot; failed multi-row writes are compensated and surfaced instead of returning a fabricated success. The `coconut-optimizer` Python function receives only the validated route matrix and constraints when OR-Tools is available. The site falls back to the same deterministic engines locally whenever those settings are absent or a remote request fails, which is why the demo works without a live backend.
 
 The browser-safe Account SDK is separate from that business API: it handles optional sessions and lightweight saved preferences. It never receives the server API key. Remote calls have bounded timeouts and validate the Appwrite function response envelope before the local fallback is used. The backend boundary reuses warm Appwrite clients/repositories while keeping business algorithms independent of SDK calls.
 
@@ -120,7 +122,7 @@ For a cloud project, use the checked-in `appwrite.config.json`, `appwrite/functi
 
 ### Automatic Appwrite deployment
 
-The `Coconut checks` workflow validates every pull request and push to `main`. A push to `main` first compares the changed paths, then deploys only the affected Appwrite resource groups: `appwrite/tables.json` changes deploy TablesDB, function or shared backend changes deploy the Functions, and app or frontend changes deploy the Site. Changes to `appwrite.config.json` deploy all three. Documentation-only and workflow-only changes do not start an Appwrite deployment. The workflow installs a pinned Appwrite CLI version and never deploys from pull requests.
+The `Coconut checks` workflow validates every pull request and push to `main`. A push to `main` first compares the changed paths, then deploys only the affected Appwrite resource groups: `appwrite/tables.json` changes deploy TablesDB, function or shared backend changes deploy the Functions, and app or frontend changes deploy the Site. Changes to `appwrite.config.json` deploy all three. Documentation-only and workflow-only changes do not start an Appwrite deployment. The workflow installs a pinned Appwrite CLI version, uses the project’s allowed `s-2vcpu-2gb` resource specification, treats CLI-reported push errors as failures, and never deploys from pull requests.
 
 In the repository's **Settings → Secrets and variables → Actions**, add these secrets:
 
@@ -158,4 +160,4 @@ Remote-island commerce should not require every small merchant to solve global l
 
 Coconut lets them coordinate the expensive part while remaining independent businesses.
 
-**Island-made. Smarter shipped.**
+**Made close. Moved together.**

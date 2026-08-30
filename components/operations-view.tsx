@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CloudSun, Gauge, LocateFixed, MapPinned, Route as RouteIcon, Settings2, ShipWheel, Sparkles, TimerReset, Truck, Waves } from 'lucide-react';
+import { Check, CloudSun, Gauge, Info, LocateFixed, MapPinned, Route as RouteIcon, Settings2, ShipWheel, TimerReset, Truck, Waves } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { RouteOptimizationResult } from '@/lib/domain/types';
 import { getOperationsDemoData } from '@/lib/operations';
@@ -26,7 +26,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
     if (data?.batch.departureId) setSelectedDepartureId(data.batch.departureId);
   }, [data?.batch.departureId]);
 
-  if (!data || loading) return <main className="content"><div className="ops-hero motion-fade"><div><span className="eyebrow">Operations · live route room</span><h1 className="section-heading" style={{ marginTop: 14 }}>Make the island<br /><em>move together.</em></h1></div><p>Loading the current batch, pickup windows, and marine signal…</p></div><div className="metric-grid" aria-hidden="true">{[0, 1, 2, 3].map((index) => <div className="metric-card skeleton" key={index}>placeholder</div>)}</div><div className="panel skeleton" style={{ minHeight: 320, marginTop: 18 }}>placeholder</div><div className="notice" style={{ marginTop: 32 }}><Sparkles size={16} /> Demo operations data is deterministic, so the route room is ready even without provider credentials.</div></main>;
+  if (!data || loading) return <main className="content"><div className="ops-hero motion-fade"><div><span className="eyebrow">Operations · pickup plan</span><h1 className="section-heading" style={{ marginTop: 14 }}>Move the island<br /><em>together.</em></h1></div><p>Loading the current batch, pickup windows, and marine signal…</p></div><div className="metric-grid" aria-hidden="true">{[0, 1, 2, 3].map((index) => <div className="metric-card skeleton" key={index}>placeholder</div>)}</div><div className="panel skeleton" style={{ minHeight: 320, marginTop: 18 }}>placeholder</div><div className="notice" style={{ marginTop: 32 }}><Info size={16} /> Demo operations data is deterministic, so the pickup plan is ready without provider credentials.</div></main>;
   const optimized = data.optimized as RouteOptimizationResult;
   const baseline = data.baseline as RouteOptimizationResult;
   const distanceSaved = data.savings.distanceMeters;
@@ -40,7 +40,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
       <section className="ops-hero motion-fade">
         <div>
           <span className="eyebrow">Operations · {selectedDeparture?.label ?? 'Friday batch'}</span>
-          <h1 className="section-heading" style={{ marginTop: 14 }}>Make the island<br /><em>move together.</em></h1>
+          <h1 className="section-heading" style={{ marginTop: 14 }}>Move the island<br /><em>together.</em></h1>
         </div>
         <div>
           <p>Seven artisan stops, two vans, one consolidation hub. See the baseline and let the constrained optimizer tighten the loop.</p>
@@ -117,7 +117,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
       </section>
 
       <section className="ops-grid">
-        <div className="panel map-panel"><div className="panel-header"><div><p className="panel-kicker">Route map · Rarotonga</p><h2 className="panel-title">The cleanest pickup loop</h2></div><span className="tiny-label"><span className="status-dot" /> {optimized.routes.length} vehicles</span></div><RouteMap route={optimized} stops={data.stops} /></div>
+        <div className="panel map-panel"><div className="panel-header"><div><p className="panel-kicker">Route map · Rarotonga</p><h2 className="panel-title">Pickup route comparison</h2></div><span className="tiny-label"><span className="status-dot" /> {optimized.routes.length} vehicles</span></div><RouteMap route={optimized} baseline={baseline} stops={data.stops} /></div>
         <div className="route-summary">
           <div className="panel"><p className="panel-kicker">Before / after</p><h2 className="panel-title">Route efficiency</h2><div className="route-comparison"><div className="route-choice"><span className="tiny-label">baseline</span><strong>{km(baseline.totalDistanceMeters)}</strong><p>sequential pickup</p></div><div className="route-choice active"><span className="tiny-label">optimized</span><strong>{km(optimized.totalDistanceMeters)}</strong><p>capacity + windows</p></div></div><div className="route-savings"><span className="tiny-label">distance saved</span><strong>{km(distanceSaved)} · {Math.round(data.savings.percent)}%</strong></div><details className="explanation-details"><summary>How was this optimized?</summary><p>OR-Tools scored the pickup loop while enforcing vehicle weight, parcel volume, seller pickup windows, handoff time, and the shared departure cutoff.</p></details></div>
           <div className="panel weather-card"><p className="panel-kicker">Marine signal · Open-Meteo</p><h2 className="panel-title">Departure confidence</h2><div className="weather-number"><strong>{Math.round(selectedWeatherRisk * 100)}%</strong><span>{sentenceCase(selectedDeparture?.weatherLabel ?? weather.label)}</span></div><p>{weather.explanation}</p><div className="weather-observations">{weather.observations.slice(0, 3).map((observation, index) => <div key={index}><strong>{observation.waveHeightM.toFixed(1)}m</strong><span>wave height</span></div>)}</div><details className="explanation-details explanation-details-dark"><summary>Why this departure?</summary><p>{selectedDeparture?.id === data.batch.departureId ? 'Friday balances shared-batch capacity, delivery timing, freight economics, and the vessel’s preferred wave and wind limits.' : `${selectedDeparture?.label ?? 'This option'} is selected for preview. It trades ${selectedDeparture?.weatherLabel.toLowerCase() ?? 'weather'} conditions against capacity, timing, and freight economics.`}</p></details></div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Anchor, ArrowRight, CheckCircle2, Globe, MapPin, Navigation, Plane, Ship, ShieldCheck, Sparkles } from 'lucide-react';
+import { Anchor, ArrowRight, CheckCircle2, Globe, MapPin, Navigation, Plane, Ship, ShieldCheck } from 'lucide-react';
 import type { Destination } from '@/lib/domain/types';
 
 export function RouteJourneyVisualizer({ destination }: { destination?: Destination }) {
@@ -15,7 +15,7 @@ export function RouteJourneyVisualizer({ destination }: { destination?: Destinat
         </div>
         <span className="journey-status-pill">
           <span className="journey-pulse" aria-hidden="true" />
-          Live Route Active
+          Route in view
         </span>
       </div>
 

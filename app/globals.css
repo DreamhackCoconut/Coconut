@@ -2771,3 +2771,52 @@ main *::after,
 @media (max-width: 720px) {
   .topbar-wrapper { border-radius: 0 !important; }
 }
+
+/* Header controls: no underline state; rounded controls carry the active state. */
+.nav-indicator { display: none !important; }
+
+.nav-button {
+  min-height: 40px;
+  padding: 0 15px;
+  border-radius: 999px !important;
+  transition: color 140ms var(--ease-out), background-color 140ms var(--ease-out), transform 140ms var(--ease-out);
+}
+
+.nav-button.active {
+  color: #ffffff !important;
+  background: var(--accent-active) !important;
+}
+
+.account-trigger { border-radius: 999px !important; }
+
+.theme-control {
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px !important;
+}
+
+.theme-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50% !important;
+}
+
+.theme-button.active { background: var(--surface) !important; }
+
+.cart-trigger {
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50% !important;
+}
+
+.cart-count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 19px;
+  height: 19px;
+  border-radius: 50% !important;
+}

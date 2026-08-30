@@ -1,0 +1,40 @@
+[
+  {
+    "$id": "coconut-api",
+    "name": "Coconut API",
+    "enabled": true,
+    "logging": true,
+    "runtime": "node-22",
+    "buildSpecification": "s-1vcpu-512mb",
+    "runtimeSpecification": "s-1vcpu-512mb",
+    "deploymentRetention": 7,
+    "scopes": [],
+    "events": [],
+    "schedule": "",
+    "timeout": 30,
+    "entrypoint": "dist/main.js",
+    "commands": "npm install && npm run build:functions",
+    "ignore": "node_modules\n.next\n.tmp\n.env\ncoverage",
+    "path": "..",
+    "execute": ["any"]
+  },
+  {
+    "$id": "coconut-optimizer",
+    "name": "Coconut OR-Tools Optimizer",
+    "enabled": true,
+    "logging": true,
+    "runtime": "python-3.12",
+    "buildSpecification": "s-1vcpu-1gb",
+    "runtimeSpecification": "s-1vcpu-1gb",
+    "deploymentRetention": 7,
+    "scopes": [],
+    "events": [],
+    "schedule": "",
+    "timeout": 10,
+    "entrypoint": "src/main.py",
+    "commands": "pip install -r requirements.txt",
+    "ignore": "__pycache__\n.pytest_cache\n.env",
+    "path": "../functions/coconut-optimizer",
+    "execute": ["any"]
+  }
+]

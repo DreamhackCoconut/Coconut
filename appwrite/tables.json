@@ -1,0 +1,275 @@
+[
+  {
+    "$id": "sellers",
+    "$permissions": ["read(\"any\")"],
+    "databaseId": "coconut",
+    "name": "Sellers",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "name", "type": "varchar", "size": 160, "required": true },
+      { "key": "slug", "type": "varchar", "size": 160, "required": true },
+      { "key": "bio", "type": "text", "required": true },
+      { "key": "location_name", "type": "varchar", "size": 160, "required": true },
+      { "key": "latitude", "type": "float", "required": true },
+      { "key": "longitude", "type": "float", "required": true },
+      { "key": "pickup_window_start", "type": "varchar", "size": 8, "required": true },
+      { "key": "pickup_window_end", "type": "varchar", "size": 8, "required": true },
+      { "key": "production_capacity_hours_per_day", "type": "float", "required": true },
+      { "key": "recent_impressions", "type": "integer", "required": true },
+      { "key": "rating", "type": "float", "required": true },
+      { "key": "avatar_url", "type": "url", "required": true }
+    ],
+    "indexes": [
+      { "key": "slug", "type": "unique", "columns": ["slug"] }
+    ]
+  },
+  {
+    "$id": "products",
+    "$permissions": ["read(\"any\")"],
+    "databaseId": "coconut",
+    "name": "Products",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "seller_id", "type": "varchar", "size": 64, "required": true },
+      { "key": "name", "type": "varchar", "size": 180, "required": true },
+      { "key": "slug", "type": "varchar", "size": 180, "required": true },
+      { "key": "description", "type": "text", "required": true },
+      { "key": "category", "type": "enum", "elements": ["Jewelry", "Basketry", "Woodwork", "Textiles", "Ceramics", "Prints"], "required": true },
+      { "key": "tags_json", "type": "text", "required": true },
+      { "key": "materials_json", "type": "text", "required": true },
+      { "key": "colors_json", "type": "text", "required": true },
+      { "key": "price_usd", "type": "float", "required": true },
+      { "key": "unit_cost_usd", "type": "float", "required": true },
+      { "key": "inventory", "type": "integer", "required": true },
+      { "key": "production_hours", "type": "float", "required": true },
+      { "key": "weight_kg", "type": "float", "required": true },
+      { "key": "length_cm", "type": "float", "required": true },
+      { "key": "width_cm", "type": "float", "required": true },
+      { "key": "height_cm", "type": "float", "required": true },
+      { "key": "fragile", "type": "boolean", "required": true },
+      { "key": "stackable", "type": "boolean", "required": true },
+      { "key": "image_url", "type": "url", "required": true },
+      { "key": "active", "type": "boolean", "required": true }
+    ],
+    "indexes": [
+      { "key": "seller", "type": "key", "columns": ["seller_id"] },
+      { "key": "slug", "type": "unique", "columns": ["slug"] }
+    ]
+  },
+  {
+    "$id": "orders",
+    "$permissions": [],
+    "databaseId": "coconut",
+    "name": "Orders",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "status", "type": "varchar", "size": 32, "required": true },
+      { "key": "batch_id", "type": "varchar", "size": 64, "required": true },
+      { "key": "destination_country", "type": "varchar", "size": 2, "required": true },
+      { "key": "subtotal_usd", "type": "float", "required": true },
+      { "key": "pooled_shipping_usd", "type": "float", "required": true },
+      { "key": "created_at", "type": "datetime", "required": true }
+    ],
+    "indexes": [{ "key": "status", "type": "key", "columns": ["status"] }]
+  },
+  {
+    "$id": "order_items",
+    "$permissions": [],
+    "databaseId": "coconut",
+    "name": "Order items",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "order_id", "type": "varchar", "size": 64, "required": true },
+      { "key": "product_id", "type": "varchar", "size": 64, "required": true },
+      { "key": "quantity", "type": "integer", "required": true }
+    ],
+    "indexes": [{ "key": "order", "type": "key", "columns": ["order_id"] }]
+  },
+  {
+    "$id": "departures",
+    "$permissions": ["read(\"any\")"],
+    "databaseId": "coconut",
+    "name": "Departures",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "label", "type": "varchar", "size": 160, "required": true },
+      { "key": "origin_port_id", "type": "varchar", "size": 64, "required": true },
+      { "key": "gateway_port_id", "type": "varchar", "size": 64, "required": true },
+      { "key": "departure_at", "type": "datetime", "required": true },
+      { "key": "arrival_at", "type": "datetime", "required": true },
+      { "key": "order_cutoff_at", "type": "datetime", "required": true },
+      { "key": "max_weight_kg", "type": "float", "required": true },
+      { "key": "max_volume_m3", "type": "float", "required": true },
+      { "key": "fixed_cost_usd", "type": "float", "required": true },
+      { "key": "variable_cost_per_kg", "type": "float", "required": true },
+      { "key": "variable_cost_per_m3", "type": "float", "required": true },
+      { "key": "destination_zone", "type": "varchar", "size": 32, "required": true },
+      { "key": "status", "type": "enum", "elements": ["open", "limited", "closed"], "required": true },
+      { "key": "route_points_json", "type": "text", "required": true },
+      { "key": "weather_risk", "type": "float", "required": true },
+      { "key": "weather_label", "type": "varchar", "size": 32, "required": true }
+    ],
+    "indexes": [{ "key": "cutoff", "type": "key", "columns": ["order_cutoff_at"] }]
+  },
+  {
+    "$id": "batches",
+    "$permissions": ["read(\"any\")"],
+    "databaseId": "coconut",
+    "name": "Batches",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "departure_id", "type": "varchar", "size": 64, "required": true },
+      { "key": "destination_zone", "type": "varchar", "size": 32, "required": true },
+      { "key": "current_weight_kg", "type": "float", "required": true },
+      { "key": "current_volume_m3", "type": "float", "required": true },
+      { "key": "order_count", "type": "integer", "required": true },
+      { "key": "participating_seller_ids_json", "type": "text", "required": true },
+      { "key": "weather_risk", "type": "float", "required": true },
+      { "key": "weather_label", "type": "varchar", "size": 32, "required": true },
+      { "key": "estimated_local_pickup_cost_usd", "type": "float", "required": true },
+      { "key": "predicted_total_logistics_cost_usd", "type": "float", "required": true }
+    ],
+    "indexes": [{ "key": "departure", "type": "key", "columns": ["departure_id"] }]
+  },
+  {
+    "$id": "batch_orders",
+    "$permissions": [],
+    "databaseId": "coconut",
+    "name": "Batch orders",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "batch_id", "type": "varchar", "size": 64, "required": true },
+      { "key": "order_id", "type": "varchar", "size": 64, "required": true }
+    ],
+    "indexes": [{ "key": "batch-order", "type": "unique", "columns": ["batch_id", "order_id"] }]
+  },
+  {
+    "$id": "ports",
+    "$permissions": ["read(\"any\")"],
+    "databaseId": "coconut",
+    "name": "Ports",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "name", "type": "varchar", "size": 180, "required": true },
+      { "key": "country_code", "type": "varchar", "size": 2, "required": true },
+      { "key": "latitude", "type": "float", "required": true },
+      { "key": "longitude", "type": "float", "required": true },
+      { "key": "source", "type": "varchar", "size": 64, "required": true },
+      { "key": "source_external_id", "type": "varchar", "size": 80, "required": true }
+    ],
+    "indexes": []
+  },
+  {
+    "$id": "vessel_profiles",
+    "$permissions": [],
+    "databaseId": "coconut",
+    "name": "Vessel profiles",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "name", "type": "varchar", "size": 120, "required": true },
+      { "key": "max_wave_height_m", "type": "float", "required": true },
+      { "key": "max_wind_kph", "type": "float", "required": true },
+      { "key": "wave_weight", "type": "float", "required": true },
+      { "key": "wind_weight", "type": "float", "required": true },
+      { "key": "swell_weight", "type": "float", "required": true }
+    ],
+    "indexes": []
+  },
+  {
+    "$id": "carton_profiles",
+    "$permissions": ["read(\"any\")"],
+    "databaseId": "coconut",
+    "name": "Carton profiles",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "code", "type": "varchar", "size": 16, "required": true },
+      { "key": "inner_length_cm", "type": "float", "required": true },
+      { "key": "inner_width_cm", "type": "float", "required": true },
+      { "key": "inner_height_cm", "type": "float", "required": true },
+      { "key": "max_weight_kg", "type": "float", "required": true },
+      { "key": "packaging_weight_kg", "type": "float", "required": true },
+      { "key": "packaging_cost_usd", "type": "float", "required": true }
+    ],
+    "indexes": [{ "key": "code", "type": "unique", "columns": ["code"] }]
+  },
+  {
+    "$id": "marketplace_events",
+    "$permissions": [],
+    "databaseId": "coconut",
+    "name": "Marketplace events",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "session_id", "type": "varchar", "size": 100, "required": true },
+      { "key": "event_type", "type": "varchar", "size": 80, "required": true },
+      { "key": "product_id", "type": "varchar", "size": 64, "required": false },
+      { "key": "seller_id", "type": "varchar", "size": 64, "required": false },
+      { "key": "metadata_json", "type": "text", "required": true },
+      { "key": "occurred_at", "type": "datetime", "required": true }
+    ],
+    "indexes": [{ "key": "session", "type": "key", "columns": ["session_id"] }]
+  },
+  {
+    "$id": "market_signals",
+    "$permissions": ["read(\"any\")"],
+    "databaseId": "coconut",
+    "name": "Market signals",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "country_code", "type": "varchar", "size": 2, "required": true },
+      { "key": "product_category", "type": "varchar", "size": 40, "required": true },
+      { "key": "trade_demand", "type": "float", "required": true },
+      { "key": "digital_access", "type": "float", "required": true },
+      { "key": "purchasing_power", "type": "float", "required": true },
+      { "key": "existing_marketplace_demand", "type": "float", "required": true },
+      { "key": "observed_at", "type": "datetime", "required": true }
+    ],
+    "indexes": [{ "key": "country-category", "type": "unique", "columns": ["country_code", "product_category"] }]
+  },
+  {
+    "$id": "external_cache",
+    "$permissions": [],
+    "databaseId": "coconut",
+    "name": "External API cache",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "cache_key", "type": "varchar", "size": 255, "required": true },
+      { "key": "provider", "type": "varchar", "size": 80, "required": true },
+      { "key": "payload_json", "type": "longtext", "required": true },
+      { "key": "fetched_at", "type": "datetime", "required": true },
+      { "key": "expires_at", "type": "datetime", "required": true },
+      { "key": "stale_until", "type": "datetime", "required": true }
+    ],
+    "indexes": [{ "key": "cache-key", "type": "unique", "columns": ["cache_key"] }]
+  },
+  {
+    "$id": "shipping_rate_cache",
+    "$permissions": [],
+    "databaseId": "coconut",
+    "name": "Shipping rate cache",
+    "enabled": true,
+    "rowSecurity": false,
+    "columns": [
+      { "key": "cache_key", "type": "varchar", "size": 255, "required": true },
+      { "key": "provider", "type": "varchar", "size": 80, "required": true },
+      { "key": "destination_country", "type": "varchar", "size": 2, "required": true },
+      { "key": "payload_json", "type": "text", "required": true },
+      { "key": "fetched_at", "type": "datetime", "required": true },
+      { "key": "expires_at", "type": "datetime", "required": true },
+      { "key": "stale_until", "type": "datetime", "required": true }
+    ],
+    "indexes": [{ "key": "cache-key", "type": "unique", "columns": ["cache_key"] }]
+  }
+]

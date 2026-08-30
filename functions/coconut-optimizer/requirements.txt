@@ -1,0 +1,3 @@
+appwrite>=11,<12
+ortools>=9.10,<10
+pydantic>=2.7,<3

@@ -6,6 +6,7 @@ import { calculateMarketOpportunities } from '@/lib/engines/market-opportunity';
 import { buildProductionPlan } from '@/lib/engines/production';
 import { buildRecommendations } from '@/lib/engines/recommendation';
 import { DemoMarketplaceRepository } from '@/lib/repositories/demo';
+import { getStoredSellerListings } from '@/lib/account';
 
 export type MarketplaceData = {
   products: Product[];
@@ -20,20 +21,25 @@ const localRepository = new DemoMarketplaceRepository();
 
 function remoteFunctionUrl(): string | undefined {
   const value = process.env.NEXT_PUBLIC_APPWRITE_API_FUNCTION_URL;
-  return value?.trim() || undefined;
+  const trimmed = value?.trim();
+  return trimmed && /^https?:\/\//i.test(trimmed) ? trimmed : undefined;
 }
 
 function remoteFunctions(): Functions | undefined {
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const functionId = process.env.NEXT_PUBLIC_APPWRITE_API_FUNCTION_ID;
-  if (!endpoint || !projectId || !functionId) return undefined;
+  if (!endpoint || !projectId || !functionId || endpoint.includes('<') || projectId.includes('<') || functionId.includes('<')) return undefined;
   const client = new Client().setEndpoint(endpoint).setProject(projectId);
   return new Functions(client);
 }
 
 function hasRemoteGateway(): boolean {
   return Boolean(remoteFunctionUrl() || remoteFunctions());
+}
+
+export function getClientBackendMode(): 'appwrite-configured' | 'demo-fallback' {
+  return hasRemoteGateway() ? 'appwrite-configured' : 'demo-fallback';
 }
 
 async function invokeRemote<T>(route: string, method: string, payload: Record<string, unknown> = {}): Promise<T> {
@@ -64,17 +70,42 @@ async function withDemoFallback<T>(remote: () => Promise<T>, demo: () => Promise
   }
 }
 
+function mergeSavedListings(data: MarketplaceData): MarketplaceData {
+  const saved = getStoredSellerListings();
+  if (!saved.length) return data;
+  const sellers = [...data.sellers];
+  const products = [...data.products];
+  for (const listing of saved) {
+    if (!sellers.some((seller) => seller.id === listing.seller.id)) sellers.push(listing.seller);
+    if (!products.some((product) => product.id === listing.product.id)) products.push(listing.product);
+  }
+  return { ...data, sellers, products };
+}
+
+async function localMarketplaceProducts() {
+  const products = await localRepository.listProducts();
+  const saved = getStoredSellerListings().map((listing) => listing.product);
+  return [...products, ...saved.filter((product) => !products.some((candidate) => candidate.id === product.id))];
+}
+
+async function localMarketplaceSellers() {
+  const sellers = await localRepository.listSellers();
+  const saved = getStoredSellerListings().map((listing) => listing.seller);
+  return [...sellers, ...saved.filter((seller) => !sellers.some((candidate) => candidate.id === seller.id))];
+}
+
 export async function getMarketplaceData(): Promise<MarketplaceData> {
-  return withDemoFallback(
+  const data = await withDemoFallback(
     () => invokeRemote<MarketplaceData>('/marketplace', 'GET'),
     async () => ({ products: await localRepository.listProducts(), sellers: await localRepository.listSellers(), departures: getDemoDepartures(), batch: getDemoBatchSnapshot() }),
   );
+  return mergeSavedListings(data);
 }
 
 export async function getCartQuote(lines: CartLine[], destination: Destination): Promise<Quote> {
   return withDemoFallback(
     () => invokeRemote<Quote>('/cart/quote', 'POST', { lines, destination }),
-    async () => quoteCart(lines, destination, await localRepository.listProducts(), getDemoBatchSnapshot(), getDemoDepartures()),
+    async () => quoteCart(lines, destination, await localMarketplaceProducts(), getDemoBatchSnapshot(), getDemoDepartures()),
   );
 }
 
@@ -82,7 +113,7 @@ export async function getCartRecommendations(lines: CartLine[], destination: Des
   return withDemoFallback(
     () => invokeRemote<Recommendation[]>('/recommendations/cart', 'POST', { lines, destination }),
     async () => {
-      const [products, sellers] = await Promise.all([localRepository.listProducts(), localRepository.listSellers()]);
+      const [products, sellers] = await Promise.all([localMarketplaceProducts(), localMarketplaceSellers()]);
       return buildRecommendations({ lines, destination, products, sellers, batch: getDemoBatchSnapshot() });
     },
   );
@@ -145,7 +176,7 @@ export async function getSellerDashboard(sellerId: string): Promise<SellerDashbo
   return withDemoFallback(
     () => invokeRemote<SellerDashboard>(`/sellers/${sellerId}/dashboard`, 'GET'),
     async () => {
-      const [products, sellers] = await Promise.all([localRepository.listProducts(), localRepository.listSellers()]);
+      const [products, sellers] = await Promise.all([localMarketplaceProducts(), localMarketplaceSellers()]);
       const seller = sellers.find((candidate) => candidate.id === sellerId) ?? sellers[0];
       if (!seller) return undefined;
       const sellerProducts = products.filter((product) => product.sellerId === seller.id);

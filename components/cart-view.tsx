@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ChevronDown, ChevronUp, CircleCheck, CreditCard, Leaf, Minus, Package, Plus, ShieldCheck, Trash2, Waves } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, CircleCheck, CreditCard, Leaf, Minus, Package, Plus, ShieldCheck, Trash2, Waves } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import type { CartLine, Destination, Product, Quote, Recommendation, Seller } from '@/lib/domain/types';
@@ -11,7 +11,7 @@ function dateLabel(value: string) { return new Intl.DateTimeFormat('en-US', { mo
 function CartItem({ product, quantity, onChange, onRemove }: { product: Product; quantity: number; onChange: (quantity: number) => void; onRemove: () => void }) {
   return (
     <article className="cart-line">
-      <Image className="cart-line-image" src={product.imageUrl} alt={product.name} width={78} height={78} />
+      <Image className="cart-line-image" src={product.imageUrl} alt={product.name} width={78} height={78} unoptimized />
       <div>
         <h3>{product.name}</h3>
         <p>{product.category} · {product.weightKg.toFixed(2)} kg each</p>
@@ -29,7 +29,7 @@ function CartItem({ product, quantity, onChange, onRemove }: { product: Product;
 function RecommendationCard({ recommendation, expanded, onToggle, onAdd }: { recommendation: Recommendation; expanded: boolean; onToggle: () => void; onAdd: () => void }) {
   return (
     <article className="recommendation-card">
-      <Image className="recommendation-card-image" src={recommendation.product.imageUrl} alt={recommendation.product.name} width={640} height={512} />
+      <Image className="recommendation-card-image" src={recommendation.product.imageUrl} alt={recommendation.product.name} width={640} height={512} unoptimized />
       <div className="recommendation-card-body">
         <span className="tiny-label">{Math.round(recommendation.score * 100)} signal</span>
         <h3>{recommendation.product.name}</h3>
@@ -44,7 +44,7 @@ function RecommendationCard({ recommendation, expanded, onToggle, onAdd }: { rec
   );
 }
 
-export function CartView({ products, sellers: _sellers, quote, recommendations, lines, destination, loading, error, onDestinationChange, onQuantityChange, onRemove, onAdd, onPlaceOrder }: { products: Product[]; sellers: Seller[]; quote: Quote | null; recommendations: Recommendation[]; lines: CartLine[]; destination: Destination; loading: boolean; error?: string; onDestinationChange: (destination: Destination) => void; onQuantityChange: (productId: string, quantity: number) => void; onRemove: (productId: string) => void; onAdd: (product: Product) => void; onPlaceOrder: () => void }) {
+export function CartView({ products, sellers: _sellers, quote, recommendations, lines, destination, loading, error, onDestinationChange, onQuantityChange, onRemove, onAdd, onPlaceOrder, onContinueShopping }: { products: Product[]; sellers: Seller[]; quote: Quote | null; recommendations: Recommendation[]; lines: CartLine[]; destination: Destination; loading: boolean; error?: string; onDestinationChange: (destination: Destination) => void; onQuantityChange: (productId: string, quantity: number) => void; onRemove: (productId: string) => void; onAdd: (product: Product) => void; onPlaceOrder: () => void; onContinueShopping: () => void }) {
   const [expandedRecommendation, setExpandedRecommendation] = useState<string>();
   const productMap = new Map(products.map((product) => [product.id, product]));
   const subtotal = quote?.subtotalUsd ?? lines.reduce((sum, line) => sum + (productMap.get(line.productId)?.priceUsd ?? 0) * line.quantity, 0);
@@ -52,7 +52,7 @@ export function CartView({ products, sellers: _sellers, quote, recommendations, 
 
   return (
     <main className="content">
-      <div className="cart-page-heading motion-fade"><span className="eyebrow">Your shared journey</span><h1 className="section-heading">A little more room<br /><em>goes a long way.</em></h1></div>
+      <div className="cart-page-heading motion-fade"><button className="button-secondary button-small pressable cart-continue" type="button" onClick={onContinueShopping}><ArrowLeft size={13} /> Continue browsing</button><span className="eyebrow">Your shared journey</span><h1 className="section-heading">A little more room<br /><em>goes a long way.</em></h1></div>
       <div className="cart-layout">
         <section>
           <div className="panel panel-pad">

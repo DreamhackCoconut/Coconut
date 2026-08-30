@@ -11,12 +11,12 @@ function ProductCard({ product, seller, index, added, onAdd }: { product: Produc
   return (
     <article className="product-card" style={{ ['--stagger' as string]: index }}>
       <div className="product-image">
-        <Image src={product.imageUrl} alt={product.name} fill sizes="(max-width: 560px) 50vw, (max-width: 1080px) 33vw, 25vw" priority={index < 4} />
+        <Image src={product.imageUrl} alt={product.name} fill sizes="(max-width: 560px) 50vw, (max-width: 1080px) 33vw, 25vw" priority={index < 4} unoptimized />
         <span className="product-tag">{product.category}</span>
       </div>
       <div className="product-card-body">
         <div className="seller-line">
-          {seller ? <Image className="seller-avatar" src={seller.avatarUrl} alt="" width={20} height={20} /> : null}
+          {seller ? <Image className="seller-avatar" src={seller.avatarUrl} alt="" width={20} height={20} unoptimized /> : null}
           <span>{seller?.name ?? 'Island artisan'}</span>
         </div>
         <h3>{product.name}</h3>
@@ -104,7 +104,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
       </div>
 
       <div className="notice" style={{ marginTop: 24 }}><UsersRound size={16} /><span><strong>Try the proof point:</strong> add the $32 Handwoven Coastal Basket, then add Shell Earrings. The earrings ride inside the same parcel for <strong>$0 estimated shipping delta.</strong></span></div>
-      <div className="footer-note"><span><MapPin size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> Rarotonga → Auckland → everywhere</span><span>DEMO MARKETPLACE DATA · deterministic fallback ready</span></div>
+      <div className="footer-note"><span><MapPin size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> Rarotonga → Auckland → everywhere</span><span>Demo marketplace data · deterministic fallback ready</span></div>
     </main>
   );
 }

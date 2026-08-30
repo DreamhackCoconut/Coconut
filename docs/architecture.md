@@ -18,11 +18,11 @@ coconut-api (Appwrite Node.js / TypeScript Function)
                               Google OR-Tools
 ```
 
-The cloud stack contains one Appwrite Site, one TablesDB database, and exactly two Appwrite Functions. No application server, VM, Redis, worker daemon, Auth, Storage, Realtime subscription, or duplicate Next.js API route is required.
+The cloud stack contains one Appwrite Site, one TablesDB database, and exactly two Appwrite Functions. The guest demo does not require authentication; the optional Appwrite Account flow is used only for signed-in saved carts and seller workspaces. No application server, VM, Redis, worker daemon, Storage, Realtime subscription, or duplicate Next.js API route is required.
 
 ## Responsibilities
 
-- **Next.js Site:** accessible marketplace, cart, operations, and artisan screens. It owns presentation state and can use deterministic local data when no credentials exist.
+- **Next.js Site:** accessible marketplace, cart, operations, and artisan screens. It owns presentation state, optional client Account sessions, and can use deterministic local data when no credentials exist.
 - **`coconut-api`:** the server-only business boundary. It reads/writes TablesDB, runs quote/packing/batching/recommendation logic, records events, handles demo reset, and coordinates providers.
 - **TablesDB:** persistent source of truth for sellers, products, orders, order items, departures, batches, batch orders, ports, vessel profiles, carton profiles, marketplace events, market signals, external cache, and shipping-rate cache.
 - **`coconut-optimizer`:** only the constrained pickup solver. It accepts a validated matrix, stops, vehicles, capacities, time windows, and cutoff, then returns routes and GeoJSON.
@@ -66,4 +66,4 @@ The cache is persisted in TablesDB when Appwrite is connected. In local zero-cre
 
 ## Security boundary
 
-The browser receives only public Appwrite endpoint/project values and optional public function configuration. The Appwrite API key, optimizer invocation, provider keys, database writes, and cache writes stay inside Appwrite Functions. No secret is imported by client components.
+The browser receives only public Appwrite endpoint/project values and optional public function configuration. Optional Account sessions use Appwrite's browser-safe Account SDK; the Appwrite API key, optimizer invocation, provider keys, database writes, and cache writes stay inside Appwrite Functions. No secret is imported by client components.

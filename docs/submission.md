@@ -60,4 +60,4 @@ The most persuasive “AI” moment is concrete: a product recommendation become
 
 ## What’s next
 
-Real merchant onboarding, authenticated roles, cooperative schedules, carrier integrations at production depth, larger asynchronous solver jobs, richer event history, learned ranking weights, and demand forecasting.
+Shared public merchant records, authenticated roles, cooperative schedules, carrier integrations at production depth, larger asynchronous solver jobs, richer event history, learned ranking weights, and demand forecasting. The MVP already provides optional Appwrite Account sign-in, saved carts, and a seller listing workspace.

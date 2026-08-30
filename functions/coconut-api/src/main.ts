@@ -49,9 +49,21 @@ function requestInfo(req: AppwriteRequest): { route: string; method: string; pay
   return { route: req.path.replace(/\/+$/, '') || '/', method: req.method, payload: body };
 }
 
+let cacheStore: AppwriteCacheStore | undefined;
+let cacheStoreDatabaseId: string | undefined;
+
 function persistentCache(): AppwriteCacheStore | undefined {
   const appwrite = createAppwriteServerClient();
-  return appwrite ? new AppwriteCacheStore(appwrite.tablesDB, appwrite.databaseId) : undefined;
+  if (!appwrite) {
+    cacheStore = undefined;
+    cacheStoreDatabaseId = undefined;
+    return undefined;
+  }
+  if (!cacheStore || cacheStoreDatabaseId !== appwrite.databaseId) {
+    cacheStore = new AppwriteCacheStore(appwrite.tablesDB, appwrite.databaseId);
+    cacheStoreDatabaseId = appwrite.databaseId;
+  }
+  return cacheStore;
 }
 
 async function quoteWithProviders(lines: CartLine[], destination: Destination) {
@@ -92,10 +104,10 @@ async function marketplace() {
 
 async function sellerPayload(sellerId: string) {
   const repository = getMarketplaceRepository();
-  const [seller, products, allProducts] = await Promise.all([repository.getSeller(sellerId), repository.listProducts(), repository.listProducts()]);
+  const [seller, products] = await Promise.all([repository.getSeller(sellerId), repository.listProducts()]);
   if (!seller) return undefined;
   const sellerProducts = products.filter((product) => product.sellerId === seller.id);
-  const plan = buildProductionPlan(seller, allProducts);
+  const plan = buildProductionPlan(seller, products);
   const opportunities = sellerProducts[0] ? calculateMarketOpportunities(sellerProducts[0], seller, getDemoMarketSignals()) : [];
   return {
     seller,

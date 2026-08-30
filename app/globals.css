@@ -32,7 +32,7 @@ body {
 }
 
 button, input, select { font: inherit; }
-button { cursor: pointer; }
+button { cursor: pointer; border: 0; padding: 0; color: inherit; background: none; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid rgba(11, 140, 148, 0.35); outline-offset: 3px; }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
@@ -339,7 +339,7 @@ img { display: block; max-width: 100%; }
 .account-dialog > .panel-kicker { margin: 22px 0 0; }
 .account-dialog h2 { margin-top: 8px; }
 .account-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 22px; padding: 4px; background: var(--mist); border-radius: 8px; }
-.account-tabs button { min-height: 34px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 11px; }
+.account-tabs button { min-height: 34px; padding: 0 8px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 11px; }
 .account-tabs button.active { color: var(--ink); background: var(--paper); box-shadow: var(--shadow-soft); }
 .account-form { display: grid; gap: 13px; margin-top: 17px; }
 .account-form label, .seller-form label { display: grid; gap: 6px; color: var(--ink-soft); font-size: 11px; }

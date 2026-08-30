@@ -6,6 +6,9 @@ import { useMemo, useState } from 'react';
 import type { BatchSnapshot, CartLine, Departure, Product, ProductCategory, Seller } from '@/lib/domain/types';
 import { useReveal } from '@/components/use-reveal';
 import { useCountUp } from '@/components/use-count-up';
+import { useCountdown } from '@/components/use-countdown';
+
+function pad(value: number) { return String(value).padStart(2, '0'); }
 
 const categories: Array<'All' | ProductCategory> = ['All', 'Basketry', 'Jewelry', 'Woodwork', 'Textiles', 'Ceramics', 'Prints'];
 
@@ -40,10 +43,13 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
   const howReveal = useReveal<HTMLElement>();
   const collectionReveal = useReveal<HTMLElement>();
   const selectedDeparture = departures.find((departure) => departure.id === batch.departureId) ?? departures[1] ?? departures[0];
-  const utilization = selectedDeparture ? Math.max(batch.currentWeightKg / selectedDeparture.maxWeightKg, batch.currentVolumeM3 / selectedDeparture.maxVolumeM3) : 0;
-  const utilizationPercent = useCountUp(Math.round(utilization * 100));
+  const weightRatio = selectedDeparture ? batch.currentWeightKg / selectedDeparture.maxWeightKg : 0;
+  const volumeRatio = selectedDeparture ? batch.currentVolumeM3 / selectedDeparture.maxVolumeM3 : 0;
+  const weightPercent = useCountUp(Math.round(weightRatio * 100));
+  const volumePercent = useCountUp(Math.round(volumeRatio * 100));
   const orderCount = useCountUp(batch.orderCount);
   const sellerCount = useCountUp(sellers.length);
+  const countdown = useCountdown(selectedDeparture?.cutoffAt);
   const sellerMap = useMemo(() => new Map(sellers.map((seller) => [seller.id, seller])), [sellers]);
   const visibleProducts = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -54,6 +60,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
     }).slice(0, 12);
   }, [category, products, search]);
   const cartIds = new Set(cartLines.map((line) => line.productId));
+  const spotlightSeller = sellerMap.get(products[0]?.sellerId) ?? sellers[0];
 
   return (
     <main className="content">
@@ -66,16 +73,34 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
             <button className="button-primary pressable" type="button" onClick={onOpenCart}>See the shared journey <ArrowRight size={15} /></button>
             <button className="button-secondary pressable" type="button" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>Browse island pieces</button>
           </div>
+          {spotlightSeller ? <div className="artisan-spotlight"><span className="spotlight-avatar"><Image src={spotlightSeller.avatarUrl} alt="" width={30} height={30} unoptimized /></span><span>Recently crafted by <strong>{spotlightSeller.name}</strong> in Rarotonga</span></div> : null}
         </div>
         <aside className="hero-aside">
           <span className="hero-dot hero-dot-a" aria-hidden="true" /><span className="hero-dot hero-dot-b" aria-hidden="true" /><span className="hero-dot hero-dot-c" aria-hidden="true" />
-          <span className="eyebrow">Next shared departure</span>
+          <div className="departure-radar-head">
+            <span className="eyebrow">Next shared departure</span>
+            <span className="beacon" aria-hidden="true"><span className="beacon-ping" /><span className="beacon-ping beacon-ping-delay" /><span className="beacon-dot" /></span>
+          </div>
           <h2>{selectedDeparture?.label ?? 'Friday West Coast Batch'}</h2>
           <p>One parcel network for many small makers. Fill the space already moving across the Pacific.</p>
-          <div className="batch-stat">
-            <span>batch filled</span>
-            <strong>{utilizationPercent}%</strong>
-            <div className="progress-track" aria-label={`${Math.round(utilization * 100)} percent of batch filled`}><div className="progress-fill" style={{ ['--progress' as string]: utilization }} /></div>
+          {countdown && !countdown.expired ? <div className="cutoff-countdown">
+            <span className="tiny-label">cutoff in</span>
+            <div className="countdown-figures" role="timer" aria-label={`${countdown.days} days ${countdown.hours} hours ${countdown.minutes} minutes to cutoff`}>
+              <div><strong>{pad(countdown.days)}</strong><span>d</span></div>
+              <div><strong>{pad(countdown.hours)}</strong><span>h</span></div>
+              <div><strong>{pad(countdown.minutes)}</strong><span>m</span></div>
+              <div><strong>{pad(countdown.seconds)}</strong><span>s</span></div>
+            </div>
+          </div> : null}
+          <div className="cargo-gauges">
+            <div className="cargo-gauge">
+              <span>weight</span><strong>{weightPercent}%</strong>
+              <div className="progress-track" aria-label={`${Math.round(weightRatio * 100)} percent of weight capacity filled`}><div className="progress-fill" style={{ ['--progress' as string]: weightRatio }} /></div>
+            </div>
+            <div className="cargo-gauge">
+              <span>volume</span><strong>{volumePercent}%</strong>
+              <div className="progress-track" aria-label={`${Math.round(volumeRatio * 100)} percent of volume capacity filled`}><div className="progress-fill coral" style={{ ['--progress' as string]: volumeRatio }} /></div>
+            </div>
           </div>
         </aside>
       </section>

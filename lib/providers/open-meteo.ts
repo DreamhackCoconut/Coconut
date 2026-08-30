@@ -25,7 +25,11 @@ export async function getMarineForecast(points: GeoPoint[], weatherRisk = 0.12):
         const payload = await response.json() as { hourly?: Record<string, number[] | undefined> };
         const hourly = payload.hourly;
         if (!hourly?.wave_height?.length) throw new Error('Open-Meteo payload was incomplete');
-        const observations = points.map((_point, index) => ({ waveHeightM: Number(hourly.wave_height?.[index] ?? 1), wavePeriodS: Number(hourly.wave_period?.[index] ?? 8), swellHeightM: Number(hourly.swell_wave_height?.[index] ?? 0.7), swellPeriodS: Number(hourly.swell_wave_period?.[index] ?? 7), windKph: 20, gustKph: 28, precipitationMm: 2 }));
+        const valueAt = (values: number[] | undefined, index: number, fallback: number) => {
+          const value = Number(values?.[index] ?? fallback);
+          return Number.isFinite(value) && value >= 0 ? value : fallback;
+        };
+        const observations = points.map((_point, index) => ({ waveHeightM: valueAt(hourly.wave_height, index, 1), wavePeriodS: valueAt(hourly.wave_period, index, 8), swellHeightM: valueAt(hourly.swell_wave_height, index, 0.7), swellPeriodS: valueAt(hourly.swell_wave_period, index, 7), windKph: 20, gustKph: 28, precipitationMm: 2 }));
         return { data: observations, metadata: { provider: 'Open-Meteo Marine', mode: 'live', fetchedAt: new Date().toISOString() } };
       } finally {
         clearTimeout(timeout);

@@ -70,6 +70,10 @@ Appwrite Cloud
 
 There is no VM, always-on application server, Redis, persistent worker, Storage, Realtime subscription, or extra API route. Optional Appwrite Account is used only for sign-in, saved carts, and seller workspaces; the browser can run the same deterministic demo engines when backend credentials are absent.
 
+### Account MVP
+
+Accounts are optional. Guests can browse, build a cart, receive quotes, and complete the demo checkout without signing in. A signed-in buyer can keep a cart and seller location across visits. A signed-in seller can add listings with a name, category, price, inventory, dimensions, and pickup coordinates; the listing is immediately available in that browser and is synced to Appwrite Account preferences when an Appwrite session is available. The interface falls back to browser-local persistence when Account is not configured, so account setup never blocks the judging path.
+
 ## Tech stack
 
 - Frontend: Next.js App Router, React, TypeScript, Tailwind CSS, MapLibre GL, Recharts
@@ -89,9 +93,9 @@ Provider reads follow **live → fresh cache → stale cache → deterministic d
 
 ## What the backend does
 
-When the public Appwrite function settings are present, the browser sends marketplace requests to `coconut-api`. That Node.js function reads and writes the Appwrite TablesDB repository, validates cart and event payloads, computes cartonization, pooled shipping, recommendations, seller intelligence, and demo orders, and caches optional provider results. The `coconut-optimizer` Python function receives only the validated route matrix and constraints when OR-Tools is available. The site falls back to the same deterministic engines locally whenever those settings are absent or a remote request fails, which is why the demo works without a live backend.
+When the public Appwrite function settings are present, the browser sends marketplace requests to `coconut-api`. That Node.js function reads and writes the Appwrite TablesDB repository, validates catalog inventory and event payloads, computes cartonization, pooled shipping, recommendations, seller intelligence, and demo orders, and caches optional provider results. Successful persistent demo orders update order items, inventory, and the selected batch snapshot; failed multi-row writes are compensated and surfaced instead of returning a fabricated success. The `coconut-optimizer` Python function receives only the validated route matrix and constraints when OR-Tools is available. The site falls back to the same deterministic engines locally whenever those settings are absent or a remote request fails, which is why the demo works without a live backend.
 
-The browser-safe Account SDK is separate from that business API: it handles optional sessions and lightweight saved preferences. It never receives the server API key. The backend boundary also reuses warm Appwrite clients/repositories and runs independent order/reset writes concurrently without changing the fallback behavior.
+The browser-safe Account SDK is separate from that business API: it handles optional sessions and lightweight saved preferences. It never receives the server API key. Remote calls have bounded timeouts and validate the Appwrite function response envelope before the local fallback is used. The backend boundary reuses warm Appwrite clients/repositories while keeping business algorithms independent of SDK calls.
 
 ## Run locally
 
@@ -112,7 +116,7 @@ npm run build
 npm run build:functions
 ```
 
-For a cloud project, use the checked-in `appwrite.config.json`, `appwrite/functions.json`, `appwrite/sites.json`, and `appwrite/tables.json`, then run `npm run appwrite:provision` and `npm run appwrite:seed`. `DEMO_MODE=true` keeps the canonical state reproducible; the API exposes `/demo/reset` for a reset before judging.
+For a cloud project, use the checked-in `appwrite.config.json`, `appwrite/functions.json`, `appwrite/sites.json`, and `appwrite/tables.json`, then run `npm run appwrite:provision` and `npm run appwrite:seed`. `DEMO_MODE=true` keeps the canonical state reproducible; the API exposes `/demo/reset` for a reset before judging. For a deployed operator-only reset, set the server-side `DEMO_RESET_TOKEN`; the browser reset still restores the local judging state immediately.
 
 ## Canonical demo path
 

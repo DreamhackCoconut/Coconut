@@ -15,7 +15,7 @@ export async function getExchangeRates(): Promise<ProviderResult<Record<string, 
         const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: controller.signal });
         if (!response.ok) throw new Error(`Frankfurter returned ${response.status}`);
         const payload = await response.json() as { rates?: Record<string, number> };
-        if (!payload.rates) throw new Error('Frankfurter payload was incomplete');
+        if (!payload.rates || Object.values(payload.rates).some((value) => !Number.isFinite(value) || value <= 0)) throw new Error('Frankfurter payload was incomplete or invalid');
         return { data: { USD: 1, ...payload.rates }, metadata: { provider: 'Frankfurter', mode: 'live', fetchedAt: new Date().toISOString() } };
       } finally { clearTimeout(timeout); }
     }, fallback: () => ({ data: DEMO_RATES, metadata: { provider: 'Frankfurter', mode: 'demo', fetchedAt: new Date().toISOString() } }),

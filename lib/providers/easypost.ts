@@ -9,7 +9,7 @@ function demoRate(packing: PackingResult, destination: Destination): ProviderRes
 
 export async function getFinalMileRate(packing: PackingResult, destination: Destination): Promise<ProviderResult<FinalMileQuote>> {
   const key = process.env.EASYPOST_API_KEY;
-  if (!shouldUseLiveProvider(key)) return demoRate(packing, destination);
+  if (!shouldUseLiveProvider(key) || !packing.boxes.length) return demoRate(packing, destination);
   return getOrFetch({
     key: `easypost-rate:${destination.countryCode}:${destination.postalCode}:${packing.boxes.map((box) => `${box.cartonCode}-${box.shippingWeightKg}`).join('|')}`,
     provider: 'EasyPost',
@@ -25,8 +25,10 @@ export async function getFinalMileRate(packing: PackingResult, destination: Dest
         if (!response.ok) throw new Error(`EasyPost returned ${response.status}`);
         const payload = await response.json() as { shipment?: { rates?: Array<{ rate?: string; carrier?: string; service?: string; delivery_days?: number }> } };
         const rate = payload.shipment?.rates?.sort((a, b) => Number(a.rate ?? 999) - Number(b.rate ?? 999))[0];
-        if (!rate?.rate) throw new Error('EasyPost payload had no rates');
-        return { data: { rateUsd: Number(rate.rate), deliveryDaysMin: Number(rate.delivery_days ?? 8), deliveryDaysMax: Number(rate.delivery_days ?? 10) + 2, carrier: rate.carrier ?? 'EasyPost carrier', service: rate.service ?? 'Ground', dataMode: 'live' }, metadata: { provider: 'EasyPost', mode: 'live', fetchedAt: new Date().toISOString() } };
+        const rateUsd = Number(rate?.rate);
+        const deliveryDays = Number(rate?.delivery_days ?? 8);
+        if (!rate?.rate || !Number.isFinite(rateUsd) || rateUsd < 0 || !Number.isFinite(deliveryDays) || deliveryDays < 0) throw new Error('EasyPost payload had no valid rates');
+        return { data: { rateUsd, deliveryDaysMin: deliveryDays, deliveryDaysMax: deliveryDays + 2, carrier: rate.carrier ?? 'EasyPost carrier', service: rate.service ?? 'Ground', dataMode: 'live' }, metadata: { provider: 'EasyPost', mode: 'live', fetchedAt: new Date().toISOString() } };
       } finally {
         clearTimeout(timeout);
       }

@@ -5,8 +5,10 @@ import { buildDistanceMatrix, haversineKm } from '@/lib/engines/routing';
 import type { RoutingMatrix } from '@/lib/providers/types';
 import { getOrFetch } from '@/lib/server/cache';
 
-function cacheKey(points: GeoPoint[], profile: string): string {
-  return `ors-matrix:${profile}:${points.map((point) => `${point.latitude.toFixed(4)},${point.longitude.toFixed(4)}`).sort().join('|')}`;
+export function buildRoutingMatrixCacheKey(points: GeoPoint[], profile: string): string {
+  // Matrix rows/columns are positional, so sorting points can return a matrix
+  // whose values no longer correspond to the caller's stop order.
+  return `ors-matrix:${profile}:${points.map((point) => `${point.latitude.toFixed(4)},${point.longitude.toFixed(4)}`).join('|')}`;
 }
 
 function fallbackMatrix(points: GeoPoint[]): ProviderResult<RoutingMatrix> {
@@ -22,7 +24,7 @@ export async function getRoutingMatrix(points: GeoPoint[], profile = 'driving-ca
   const fallback = () => fallbackMatrix(points);
   if (!shouldUseLiveProvider(key)) return fallback();
   return getOrFetch({
-    key: cacheKey(points, profile),
+    key: buildRoutingMatrixCacheKey(points, profile),
     provider: 'OpenRouteService',
     ttlMs: 24 * 60 * 60 * 1000,
     fetcher: async () => {
@@ -32,7 +34,8 @@ export async function getRoutingMatrix(points: GeoPoint[], profile = 'driving-ca
         const response = await fetch(`https://api.openrouteservice.org/v2/matrix/${profile}`, { method: 'POST', headers: { Authorization: key as string, 'Content-Type': 'application/json' }, body: JSON.stringify({ locations: points.map((point) => [point.longitude, point.latitude]), metrics: ['distance', 'duration'] }), signal: controller.signal });
         if (!response.ok) throw new Error(`ORS matrix returned ${response.status}`);
         const payload = await response.json() as { distances?: number[][]; durations?: number[][] };
-        if (!payload.distances || !payload.durations) throw new Error('ORS matrix response was incomplete');
+        const size = points.length;
+        if (!payload.distances || !payload.durations || payload.distances.length !== size || payload.durations.length !== size || payload.distances.some((row) => row.length !== size) || payload.durations.some((row) => row.length !== size) || [...payload.distances, ...payload.durations].some((row) => row.some((value) => !Number.isFinite(value) || value < 0))) throw new Error('ORS matrix response was incomplete or invalid');
         return { data: { distancesMeters: payload.distances, durationsSeconds: payload.durations }, metadata: { provider: 'OpenRouteService', mode: 'live', fetchedAt: new Date().toISOString() } };
       } finally {
         clearTimeout(timeout);

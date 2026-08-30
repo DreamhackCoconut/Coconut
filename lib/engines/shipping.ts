@@ -2,7 +2,9 @@ import { DESTINATION_ZONES, LOGISTICS, clamp, getDestinationZone, roundMoney } f
 import type { BatchSnapshot, Departure, Destination, FinalMileQuote, PackingResult, ShippingBreakdown } from '@/lib/domain/types';
 
 export function getChargeableWeight(packing: PackingResult): number {
-  return Math.max(packing.totalWeightKg, packing.totalVolumeM3 * LOGISTICS.seaDensityFactorKgPerM3);
+  const weight = Number.isFinite(packing.totalWeightKg) && packing.totalWeightKg >= 0 ? packing.totalWeightKg : 0;
+  const volume = Number.isFinite(packing.totalVolumeM3) && packing.totalVolumeM3 >= 0 ? packing.totalVolumeM3 : 0;
+  return Math.max(weight, volume * LOGISTICS.seaDensityFactorKgPerM3);
 }
 
 export function estimateFinalMile(packing: PackingResult, destination: Destination): FinalMileQuote {
@@ -41,7 +43,8 @@ export function estimatePooledShipping(input: {
 }): { totalUsd: number; finalMile: FinalMileQuote; breakdown: ShippingBreakdown; batchUtilization: number } {
   const { packing, departure, batch, destination } = input;
   const chargeableWeight = getChargeableWeight(packing);
-  const totalBatchChargeableWeight = Math.max(LOGISTICS.currentDemoBatchChargeableWeightKg, batch.currentWeightKg + chargeableWeight);
+  const currentBatchWeight = Number.isFinite(batch.currentWeightKg) && batch.currentWeightKg >= 0 ? batch.currentWeightKg : 0;
+  const totalBatchChargeableWeight = Math.max(0.001, currentBatchWeight + chargeableWeight);
   const fixedShare = (chargeableWeight / totalBatchChargeableWeight) * departure.fixedCostUsd;
   const variableWeightCost = packing.totalWeightKg * departure.variableCostPerKg;
   const variableVolumeCost = packing.totalVolumeM3 * departure.variableCostPerM3;
@@ -54,8 +57,9 @@ export function estimatePooledShipping(input: {
     finalMileUsd: finalMile.rateUsd,
     packagingUsd: packing.totalPackagingCostUsd,
   };
-  const batchWeightUtilization = (batch.currentWeightKg + packing.totalWeightKg) / departure.maxWeightKg;
-  const batchVolumeUtilization = (batch.currentVolumeM3 + packing.totalVolumeM3) / departure.maxVolumeM3;
+  const batchWeightUtilization = (currentBatchWeight + Math.max(0, packing.totalWeightKg)) / Math.max(0.001, departure.maxWeightKg);
+  const currentBatchVolume = Number.isFinite(batch.currentVolumeM3) && batch.currentVolumeM3 >= 0 ? batch.currentVolumeM3 : 0;
+  const batchVolumeUtilization = (currentBatchVolume + Math.max(0, packing.totalVolumeM3)) / Math.max(0.001, departure.maxVolumeM3);
   return {
     totalUsd: roundMoney(Object.values(breakdown).reduce((sum, value) => sum + value, 0)),
     finalMile,

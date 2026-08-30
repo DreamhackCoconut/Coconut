@@ -3,6 +3,7 @@
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, CircleCheck, CreditCard, Leaf, Minus, Package, Plus, ShieldCheck, Trash2, Waves } from 'lucide-react';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
+import { CoconutMark } from '@/components/coconut-mark';
 import type { CartLine, Destination, Product, Quote, Recommendation, Seller } from '@/lib/domain/types';
 
 function money(value: number) { return `$${value.toFixed(2)}`; }
@@ -40,7 +41,7 @@ function CartItem({ product, quantity, onChange, onRemove }: { product: Product;
           <button className="pressable" type="button" onClick={handleIncrement} aria-label="Increase quantity"><Plus size={12} /></button>
         </div>
       </div>
-      <div className="line-price"><strong>{money(product.priceUsd * quantity)}</strong><button className="remove-button" type="button" onClick={scheduleRemove}><Trash2 size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> Remove</button></div>
+      <div className="line-price"><strong>{money(product.priceUsd * quantity)}</strong><button className="remove-button" type="button" onClick={scheduleRemove}><Trash2 size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> remove</button></div>
     </article>
   );
 }
@@ -55,7 +56,7 @@ function RecommendationCard({ recommendation, expanded, onToggle, onAdd }: { rec
         <p>{recommendation.shippingDeltaUsd === 0 ? 'Fits the current parcel with no estimated shipping delta.' : `Estimated shipping change: ${money(recommendation.shippingDeltaUsd)}`}</p>
         <div className="recommendation-actions">
           <button className="why-button" type="button" onClick={onToggle}>{expanded ? 'Hide why' : 'Why this?'} {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</button>
-          <button className="button-primary button-small pressable" type="button" onClick={onAdd}><Plus size={12} /> Add</button>
+          <button className="button-primary button-small pressable" type="button" onClick={onAdd}><Plus size={12} /> add</button>
         </div>
         {expanded ? <div className="why-detail">{recommendation.reasons.map((reason) => <div key={reason}>— {reason}</div>)}</div> : null}
       </div>
@@ -112,13 +113,13 @@ export function CartView({ products, sellers: _sellers, quote, recommendations, 
               </div>
             ) : (
               <div className="empty-state" style={{ marginTop: 18 }}>
-                <Package size={23} color="var(--teal)" style={{ marginBottom: 13, marginInline: 'auto' }} />
+                <span style={{ display: 'block', width: 'fit-content', marginBottom: 13, marginInline: 'auto', color: 'var(--teal)' }}><CoconutMark size={32} /></span>
                 <h3>Your parcel is waiting.</h3>
                 <p>Head back to the collection and choose a piece to start a shared journey.</p>
               </div>
             )}
             <div className="carton-list">
-              <span className="tiny-label" style={{ alignSelf: 'center', marginRight: 3 }}>Packing plan</span>
+              <span className="tiny-label" style={{ alignSelf: 'center', marginRight: 3 }}>packing plan</span>
               {quote?.packing.boxes.map((box, index) => (
                 <span className="carton-chip" key={`${box.cartonCode}-${index}`}>
                   <Package size={11} style={{ display: 'inline', verticalAlign: '-2px' }} /> {box.cartonCode} · {Math.round(box.utilization * 100)}%
@@ -159,7 +160,7 @@ export function CartView({ products, sellers: _sellers, quote, recommendations, 
         </section>
 
         <aside className="shipping-panel" aria-busy={loading}>
-          <div className="shipping-panel-top"><p className="panel-kicker">Coconut shared shipping</p><h2 className="panel-title">Your fairest route</h2><div className="shipping-headline"><div><span className="shipping-label">Shared shipment</span><div className="shipping-price">{quote ? money(quote.shipping.pooledUsd) : '—'}<small>Delivery estimate</small></div></div>{quote ? <span className="saving-badge">Save {money(quote.shipping.savingsUsd)}</span> : null}</div></div>
+          <div className="shipping-panel-top"><p className="panel-kicker">Coconut shared shipping</p><h2 className="panel-title">Your fairest route</h2><div className="shipping-headline"><div><span className="shipping-label">Shared shipment</span><div className="shipping-price">{quote ? money(quote.shipping.pooledUsd) : '—'}<small>delivery estimate</small></div></div>{quote ? <span className="saving-badge">save {money(quote.shipping.savingsUsd)}</span> : null}</div></div>
           <div className="shipping-details">
             <label className="tiny-label" htmlFor="destination" style={{ color: 'rgba(255,255,255,.55)' }}>Deliver to</label>
             <select id="destination" className="select-field" value={destination.countryCode} onChange={(event) => onDestinationChange({ ...destination, countryCode: event.target.value as Destination['countryCode'] })}>
@@ -175,10 +176,10 @@ export function CartView({ products, sellers: _sellers, quote, recommendations, 
               <div className="detail-row"><span>Packaging · {quote.packing.boxes.length} carton{quote.packing.boxes.length === 1 ? '' : 's'}</span><strong>{money(quote.breakdown.packagingUsd)}</strong></div>
               <div className="shipping-divider" />
               <div><div className="progress-caption"><span>Shared shipment · Friday</span><strong>{Math.round(utilization * 100)}% utilized</strong></div><div className="progress-track" aria-label={`${Math.round(utilization * 100)} percent of shared shipment utilized`}><div className="progress-fill" style={{ ['--progress' as string]: utilization }} /></div></div>
-              <div className="ship-footer"><span>Arrives<br /><strong>{dateLabel(quote.estimatedDelivery.minDate)} – {dateLabel(quote.estimatedDelivery.maxDate)}</strong></span><span style={{ textAlign: 'right' }}>Sea state<br /><strong style={{ color: '#b7d8f7' }}><span className="status-dot" />{quote.recommendedBatch.weatherLabel.toLowerCase()}</strong></span></div>
+              <div className="ship-footer"><span>Arrives<br /><strong>{dateLabel(quote.estimatedDelivery.minDate)} – {dateLabel(quote.estimatedDelivery.maxDate)}</strong></span><span style={{ textAlign: 'right' }}>Sea state<br /><strong style={{ color: '#8bd7d4' }}><span className="status-dot" />{quote.recommendedBatch.weatherLabel.toLowerCase()}</strong></span></div>
               <button className="button-primary pressable" type="button" onClick={onPlaceOrder} disabled={loading}>{loading ? 'Confirming…' : <>Place demo order <ArrowRight size={14} /></>}</button>
             </> : <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, lineHeight: 1.5, paddingTop: 10 }}>Your route, packing plan, and shared savings will appear here.</div>}
-            <div className="detail-row" style={{ justifyContent: 'flex-start', gap: 7, marginTop: 4 }}><ShieldCheck size={13} color="#b7d8f7" /><span>Demo quote · no payment captured</span></div>
+            <div className="detail-row" style={{ justifyContent: 'flex-start', gap: 7, marginTop: 4 }}><ShieldCheck size={13} color="#8bd7d4" /><span>Demo quote · no payment captured</span></div>
           </div>
         </aside>
       </div>

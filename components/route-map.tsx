@@ -63,9 +63,9 @@ export function RouteMap({ route, baseline, stops }: { route: RouteOptimizationR
           features: baselineRouteCoordinates.length > 1 ? [{ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: baselineRouteCoordinates } }] : [],
         },
       });
-      map.addLayer({ id: 'coconut-baseline', type: 'line', source: 'coconut-baseline', minzoom: 5, paint: { 'line-color': '#52656d', 'line-width': 2, 'line-opacity': 0.78, 'line-dasharray': [2, 2] } });
+      map.addLayer({ id: 'coconut-baseline', type: 'line', source: 'coconut-baseline', minzoom: 5, paint: { 'line-color': '#647784', 'line-width': 2, 'line-opacity': 0.78, 'line-dasharray': [2, 2] } });
       map.addLayer({ id: 'coconut-route-casing', type: 'line', source: 'coconut-route', paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0.92 } });
-      map.addLayer({ id: 'coconut-route', type: 'line', source: 'coconut-route', paint: { 'line-color': '#2b6378', 'line-width': 4, 'line-opacity': 0.98 } });
+      map.addLayer({ id: 'coconut-route', type: 'line', source: 'coconut-route', paint: { 'line-color': '#e86348', 'line-width': 4, 'line-opacity': 0.98 } });
 
       // HTML markers stay above the external style and keep the numbered pickup
       // story reliable across MapLibre styles and zoom levels.

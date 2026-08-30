@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CircleHelp, Monitor, Moon, ShoppingBag, Sun, Waves, X } from 'lucide-react';
+import { Check, CircleHelp, ShoppingBag, Waves, X } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccountDialog } from '@/components/account-dialog';
@@ -15,7 +15,6 @@ import { createDemoOrder, getCartRecommendations, getCartQuote, getClientBackend
 import type { CartLine, Destination, Product, Quote, Recommendation } from '@/lib/domain/types';
 
 export type AppView = 'shop' | 'cart' | 'operations' | 'artisan';
-type ThemeMode = 'system' | 'light' | 'dark';
 
 const defaultDestination: Destination = { countryCode: 'US', region: 'West Coast', postalCode: '94107' };
 
@@ -51,28 +50,6 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
   const [account, setAccount] = useState<CoconutAccount | null>(null);
   const [accountReady, setAccountReady] = useState(false);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
-  const [theme, setTheme] = useState<ThemeMode>('system');
-
-  useEffect(() => {
-    try {
-      const savedTheme = window.localStorage.getItem('coconut-theme');
-      if (savedTheme === 'light' || savedTheme === 'dark') setTheme(savedTheme);
-    } catch {
-      // The system theme remains the safe fallback when local storage is unavailable.
-    }
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    let savedTheme: string | null = null;
-    try { savedTheme = window.localStorage.getItem('coconut-theme'); } catch { /* system preference remains active */ }
-    if (theme === 'system') {
-      if (savedTheme !== 'light' && savedTheme !== 'dark') root.removeAttribute('data-theme');
-      return;
-    }
-    root.dataset.theme = theme;
-    try { window.localStorage.setItem('coconut-theme', theme); } catch { /* keep the current session theme */ }
-  }, [theme]);
 
   useEffect(() => {
     let active = true;
@@ -241,16 +218,18 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
     <a className="skip-link" href="#main-content">Skip to main content</a>
     <div className="topbar-wrapper">
       <header className="topbar">
+        {/* Left Island: Brand */}
         <div className="brand-island">
           <button className="brand pressable" type="button" onClick={() => navigate('shop')} aria-label="Coconut home">
-            <span className="brand-mark" aria-hidden="true"><Image className="brand-logo-image" src="/coconut-logo.jpg" alt="" width={32} height={32} priority /></span>
+            <span className="brand-mark" aria-hidden="true"><Image className="brand-logo-image" src="/coconut-logo.jpg" alt="" width={32} height={32} priority unoptimized /></span>
             <span>
               <span className="brand-name">Coconut</span>
-              <span className="brand-note">Island-made logistics</span>
+              <span className="brand-note">island-made logistics</span>
             </span>
           </button>
         </div>
 
+        {/* Center Island: Main Navigation */}
         <div className="main-nav-island">
           <nav className="main-nav" aria-label="Primary navigation" ref={navRef}>
             <span className="nav-indicator" aria-hidden="true" style={{ transform: `translateX(${navIndicator.x}px)`, width: navIndicator.width }} />
@@ -261,6 +240,7 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
           </nav>
         </div>
 
+        {/* Right Island: Account & Cart */}
         <div className="topbar-actions-island">
           {account ? (
             <button className="account-trigger pressable" type="button" onClick={() => void handleSignOut()} aria-label={`Sign out ${account.name}`}>
@@ -270,11 +250,6 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
           ) : (
             <button className="account-trigger pressable" type="button" onClick={() => setAccountDialogOpen(true)}>Sign in</button>
           )}
-          <div className="theme-control" role="group" aria-label="Color theme">
-            <button className={`theme-button ${theme === 'system' ? 'active' : ''}`} type="button" aria-label="Use system color theme" aria-pressed={theme === 'system'} onClick={() => setTheme('system')} title="System theme"><Monitor size={14} /></button>
-            <button className={`theme-button ${theme === 'light' ? 'active' : ''}`} type="button" aria-label="Use light color theme" aria-pressed={theme === 'light'} onClick={() => setTheme('light')} title="Light theme"><Sun size={14} /></button>
-            <button className={`theme-button ${theme === 'dark' ? 'active' : ''}`} type="button" aria-label="Use dark color theme" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')} title="Dark theme"><Moon size={14} /></button>
-          </div>
           <button id="cart-nav-button" className="cart-trigger pressable" type="button" onClick={() => navigate('cart')} aria-label={`Open cart with ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}>
             <ShoppingBag size={15} />
             <span className="cart-count" key={cartCount} aria-hidden="true">{cartCount}</span>
@@ -284,8 +259,8 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
     </div>
     <div id="main-content" tabIndex={-1}>{appContent}</div>
     <SiteFooter onJoin={() => setAccountDialogOpen(true)} />
-    <div className="network-status"><span className="status-dot" /> {backendMode === 'appwrite-configured' ? 'Appwrite ready' : 'Demo fallback'} <CircleHelp size={12} aria-label={backendMode === 'appwrite-configured' ? 'Appwrite API configured; provider fallbacks remain available' : 'Appwrite API not configured; deterministic seeded data is active'} /><button className="network-reset" type="button" onClick={resetDemoState}>Reset demo</button></div>
-    {toast ? <div className="toast" role="status" aria-live="polite"><Check size={15} color="#b7d8f7" /> {toast}</div> : null}
+    <div className="network-status"><span className="status-dot" /> {backendMode === 'appwrite-configured' ? 'appwrite-ready' : 'demo-fallback'} <CircleHelp size={12} aria-label={backendMode === 'appwrite-configured' ? 'Appwrite API configured; provider fallbacks remain available' : 'Appwrite API not configured; deterministic seeded data is active'} /><button className="network-reset" type="button" onClick={resetDemoState}>Reset demo</button></div>
+    {toast ? <div className="toast" role="status" aria-live="polite"><Check size={15} color="#8bd7d4" /> {toast}</div> : null}
     {order ? <div className="overlay" role="presentation"><section className="confirmation" role="dialog" aria-modal="true" aria-labelledby="order-title"><button className="icon-close pressable" type="button" onClick={() => setOrder(undefined)} aria-label="Close order confirmation"><X size={16} /></button><div className="confirmation-mark"><Check size={21} /></div><h2 id="order-title">Shared parcel booked.</h2><p>Demo order <span className="mono">{order.orderId}</span> is attached to the Friday West Coast Batch. No payment was captured.</p><button className="button-primary pressable" type="button" onClick={() => { setOrder(undefined); navigate('shop'); }}>Back to the island <Waves size={14} /></button></section></div> : null}
     {accountDialogOpen ? <AccountDialog onClose={() => setAccountDialogOpen(false)} onAuthenticated={handleAuthenticated} /> : null}
   </div>;

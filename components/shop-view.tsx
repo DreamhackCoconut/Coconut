@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Box, Check, CircleCheck, Clock, Eye, Feather, Hammer, MapPin, Package, PackageCheck, Plus, Radio, Route as RouteIcon, Search, ShipWheel } from 'lucide-react';
+import { ArrowRight, Box, Check, CircleCheck, Clock, Eye, Feather, Hammer, MapPin, Package, PackageCheck, Plus, Radio, Route as RouteIcon, Search, ShipWheel, Sparkles, UsersRound } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BatchSnapshot, CartLine, Departure, Product, ProductCategory, Seller } from '@/lib/domain/types';
@@ -38,53 +38,57 @@ function ProductCard({
   onQuickView: (product: Product) => void;
 }) {
   return (
-    <article className="product-card" style={{ ['--stagger' as string]: index }}>
-      <button
-        className="product-card-main"
-        type="button"
-        onClick={() => onQuickView(product)}
-        aria-label={`View details for ${product.name}`}
-      >
-        <div className="product-image">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            sizes="(max-width: 560px) 50vw, (max-width: 1080px) 33vw, 25vw"
-            priority={index < 4}
-            unoptimized
-          />
-          <span className="product-tag">{product.category}</span>
-        </div>
+    <article
+      className="product-card"
+      style={{ ['--stagger' as string]: index }}
+      onClick={() => onQuickView(product)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onQuickView(product); }}
+      aria-label={`View ${product.name}`}
+    >
+      <div className="product-image">
+        <Image
+          src={product.imageUrl}
+          alt={product.name}
+          fill
+          sizes="(max-width: 560px) 50vw, (max-width: 1080px) 33vw, 25vw"
+          priority={index < 4}
+          unoptimized
+        />
+        <span className="product-tag">{product.category}</span>
+      </div>
 
-        <div className="product-card-body">
-          <div>
-            <div className="seller-line">
-              {seller ? <Image className="seller-avatar" src={seller.avatarUrl} alt="" width={18} height={18} unoptimized /> : null}
-              <span>{seller?.name ?? 'Island artisan'}</span>
-            </div>
-            <h3>{product.name}</h3>
-            <p>{product.description}</p>
+      <div className="product-card-body">
+        <div>
+          <div className="seller-line">
+            {seller ? <Image className="seller-avatar" src={seller.avatarUrl} alt="" width={18} height={18} unoptimized /> : null}
+            <span>{seller?.name ?? 'Island artisan'}</span>
+          </div>
+          <h3>{product.name}</h3>
+          <p>{product.description}</p>
 
-            <div className="product-sub-info">
-              <span className="material-line">{product.materials[0] || 'Handcrafted'}</span>
-              <span className="weight-fit-line">· {product.weightKg} kg</span>
-            </div>
+          <div className="product-sub-info">
+            <span className="material-line">{product.materials[0] || 'Handcrafted'}</span>
+            <span className="weight-fit-line">· {product.weightKg} kg</span>
           </div>
         </div>
-      </button>
 
-      <div className="product-meta">
-        <span className="price">${product.priceUsd}</span>
-        <button
-          className="add-icon pressable"
-          type="button"
-          onClick={(e) => onAdd(product, e)}
-          aria-label={`Add ${product.name} to cart`}
-          title={added ? 'Add another' : 'Add to cart'}
-        >
-          {added ? <Check size={16} strokeWidth={2.4} /> : <Plus size={16} strokeWidth={2.4} />}
-        </button>
+        <div className="product-meta">
+          <span className="price">${product.priceUsd}</span>
+          <button
+            className="add-icon pressable"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd(product, e);
+            }}
+            aria-label={`Add ${product.name} to cart`}
+            title={added ? 'Add another' : 'Add to cart'}
+          >
+            {added ? <Check size={16} strokeWidth={2.4} /> : <Plus size={16} strokeWidth={2.4} />}
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -212,9 +216,9 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
           <span className="eyebrow">Rarotonga · Cook Islands</span>
           <h1 className="display motion-stagger">
             <span style={{ ['--stagger' as string]: 0 }}>Island-made.</span><br />
-            <em style={{ ['--stagger' as string]: 1 }}>Moved together.</em>
+            <em style={{ ['--stagger' as string]: 1 }}>Smarter shipped.</em>
           </h1>
-          <p className="lede">Discover work made close to the water, then see the shared journey from pickup to home.</p>
+          <p className="lede">Discover work made close to the water, then let Coconut find the cleanest shared journey home.</p>
           <div className="hero-actions">
             <button className="button-primary pressable" type="button" onClick={onOpenCart}>
               See the shared journey <ArrowRight size={15} />
@@ -229,7 +233,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         <aside className="hero-aside">
           <div>
             <div className="hero-aside-header">
-              <span className="eyebrow">Pacific gateway</span>
+              <span className="eyebrow" style={{ color: '#8bd7d4' }}>Pacific gateway</span>
               <span className="radar-live-pill">Vessel active</span>
             </div>
 
@@ -271,19 +275,19 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         </aside>
       </section>
 
-      <section className="signal-band motion-stagger" aria-label="Shared shop signals">
-        <div className="signal-cell" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">Shared orders</span><strong>{orderCount} orders moving together</strong><p>Shared pickup, shared freight, less empty ocean.</p></div>
+      <section className="signal-band motion-stagger" aria-label="Coconut network signals">
+        <div className="signal-cell" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">The network effect</span><strong>{orderCount} orders moving together</strong><p>Shared pickup, shared freight, less empty ocean.</p></div>
         <div className="signal-cell" style={{ ['--stagger' as string]: 1 }}><span className="tiny-label">Local makers</span><strong>{sellerCount} workshops</strong><p>Across Rarotonga’s coast.</p></div>
-        <div className="signal-cell" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">Departure conditions</span><strong><ShipWheel size={18} style={{ display: 'inline', verticalAlign: '-3px' }} /> {batch.weatherLabel.toLowerCase()} seas</strong><p>Route reliability is part of every recommendation.</p></div>
+        <div className="signal-cell" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">Current signal</span><strong><ShipWheel size={18} style={{ display: 'inline', verticalAlign: '-3px' }} /> {batch.weatherLabel.toLowerCase()} seas</strong><p>Route reliability is part of every recommendation.</p></div>
       </section>
 
       <section ref={howReveal.ref} className={`how-it-works ${howReveal.className}`} aria-labelledby="how-coconut-works">
-        <div className="how-header"><div><span className="eyebrow">How it works</span><h2 id="how-coconut-works" className="section-heading">How <em>Coconut</em> works</h2></div><p>Independent makers stay independent. Coconut coordinates the expensive movement between them.</p></div>
+        <div className="how-header"><div><span className="eyebrow">The simple version</span><h2 id="how-coconut-works" className="section-heading">How <em>Coconut</em> works</h2></div><p>Independent makers stay independent. Coconut coordinates the expensive movement between them.</p></div>
         <ol className="how-grid">
           <li className="how-step"><span className="how-step-index">01</span><div><h3>Shop local</h3><p>Buy directly from island artisans and discover the story behind each piece.</p></div></li>
           <li className="how-step"><span className="how-step-index"><PackageCheck size={17} /></span><div><h3>Ship together</h3><p>Compatible orders share a departure and a fair slice of fixed freight.</p></div></li>
-          <li className="how-step"><span className="how-step-index"><Box size={17} /></span><div><h3>Pack with care</h3><p>Carton fit and marginal shipping cost shape each suggestion.</p></div></li>
-          <li className="how-step"><span className="how-step-index"><RouteIcon size={17} /></span><div><h3>Plan the pickup</h3><p>Pickup windows, vehicle capacity, and marine conditions shape the move.</p></div></li>
+          <li className="how-step"><span className="how-step-index"><Box size={17} /></span><div><h3>Pack smarter</h3><p>Carton fit and marginal shipping cost shape the next recommendation.</p></div></li>
+          <li className="how-step"><span className="how-step-index"><RouteIcon size={17} /></span><div><h3>Route smarter</h3><p>Pickup windows, vehicle capacity, and marine conditions inform the move.</p></div></li>
         </ol>
       </section>
 
@@ -344,7 +348,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         ))}
       </div>
 
-      <div className="notice" style={{ marginTop: 24 }}><span><strong>Shared freight preview</strong> Two compatible pieces can travel in one parcel with no estimated shipping delta.</span></div>
+      <div className="notice" style={{ marginTop: 24 }}><UsersRound size={16} /><span><strong>Try the proof point:</strong> add the $32 Handwoven Coastal Basket, then add Shell Earrings. The earrings ride inside the same parcel for <strong>$0 estimated shipping delta.</strong></span></div>
       <div className="footer-note"><span><MapPin size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> Rarotonga → Auckland → everywhere</span><span>Demo marketplace data · deterministic fallback ready</span></div>
 
       {/* Quick View Drawer Modal */}

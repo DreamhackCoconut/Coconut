@@ -68,7 +68,7 @@ Appwrite Cloud
                      external providers
 ```
 
-There is no VM, always-on application server, Redis, persistent worker, Auth, Storage, Realtime subscription, or extra API route. The browser can run the same deterministic demo engines when credentials are absent.
+There is no VM, always-on application server, Redis, persistent worker, Storage, Realtime subscription, or extra API route. Optional Appwrite Account is used only for sign-in, saved carts, and seller workspaces; the browser can run the same deterministic demo engines when backend credentials are absent.
 
 ## Tech stack
 
@@ -86,6 +86,12 @@ There is no VM, always-on application server, Redis, persistent worker, Auth, St
 **Seeded scenario data:** fictional artisan businesses and products, marketplace interactions, cooperative schedules, negotiated freight costs, and freight capacities. The repository never presents the fictional merchants as real businesses.
 
 Provider reads follow **live → fresh cache → stale cache → deterministic demo fallback**. Missing optional credentials or an outage cannot destroy the judging path.
+
+## What the backend does
+
+When the public Appwrite function settings are present, the browser sends marketplace requests to `coconut-api`. That Node.js function reads and writes the Appwrite TablesDB repository, validates cart and event payloads, computes cartonization, pooled shipping, recommendations, seller intelligence, and demo orders, and caches optional provider results. The `coconut-optimizer` Python function receives only the validated route matrix and constraints when OR-Tools is available. The site falls back to the same deterministic engines locally whenever those settings are absent or a remote request fails, which is why the demo works without a live backend.
+
+The browser-safe Account SDK is separate from that business API: it handles optional sessions and lightweight saved preferences. It never receives the server API key. The backend boundary also reuses warm Appwrite clients/repositories and runs independent order/reset writes concurrently without changing the fallback behavior.
 
 ## Run locally
 
@@ -130,7 +136,7 @@ The interface uses semantic landmarks, a skip link, labeled search and destinati
 
 ## Limitations and next steps
 
-The current marketplace and operator scenario are intentionally seeded for a reliable hackathon demo. A production version would add real merchant onboarding, authenticated roles, carrier/cooperative schedules, larger asynchronous solver jobs, richer event history, learned ranking weights, and stronger browser/E2E coverage.
+The marketplace and operator scenario are intentionally seeded for a reliable hackathon demo. The MVP also includes optional Appwrite Account sign-in, saved carts, and a seller workspace for adding listings at arbitrary pickup locations. A production version would add authenticated roles, shared public listing records, carrier/cooperative schedules, larger asynchronous solver jobs, richer event history, learned ranking weights, and stronger browser/E2E coverage.
 
 Remote-island commerce should not require every small merchant to solve global logistics independently.
 

@@ -5,6 +5,11 @@ import type { DemoOrderInput, MarketplaceRepository } from '@/lib/repositories/t
 
 type AppwriteRow = Record<string, unknown> & { $id?: string; $createdAt?: string };
 
+type ServerClient = { client: Client; tablesDB: TablesDB; databaseId: string };
+
+let cachedClientSignature: string | undefined;
+let cachedServerClient: ServerClient | null | undefined;
+
 const TABLES = {
   sellers: 'sellers',
   products: 'products',
@@ -119,9 +124,16 @@ export function createAppwriteServerClient(): { client: Client; tablesDB: Tables
   const projectId = process.env.APPWRITE_PROJECT_ID ?? process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const apiKey = process.env.APPWRITE_API_KEY;
   const databaseId = process.env.APPWRITE_DATABASE_ID;
-  if (!endpoint || !projectId || !apiKey || !databaseId) return null;
+  const signature = [endpoint, projectId, apiKey, databaseId].join('\u0000');
+  if (signature === cachedClientSignature) return cachedServerClient ?? null;
+  cachedClientSignature = signature;
+  if (!endpoint || !projectId || !apiKey || !databaseId) {
+    cachedServerClient = null;
+    return null;
+  }
   const client = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
-  return { client, tablesDB: new TablesDB(client), databaseId };
+  cachedServerClient = { client, tablesDB: new TablesDB(client), databaseId };
+  return cachedServerClient;
 }
 
 export class AppwriteMarketplaceRepository implements MarketplaceRepository {
@@ -255,9 +267,7 @@ export class AppwriteMarketplaceRepository implements MarketplaceRepository {
         pooled_shipping_usd: input.pooledShippingUsd,
         created_at: new Date().toISOString(),
       });
-      for (const line of input.lines) {
-        await this.create(TABLES.orderItems, ID.unique(), { order_id: orderId, product_id: line.productId, quantity: line.quantity });
-      }
+      await Promise.all(input.lines.map((line) => this.create(TABLES.orderItems, ID.unique(), { order_id: orderId, product_id: line.productId, quantity: line.quantity })));
       await this.create(TABLES.batchOrders, ID.unique(), { batch_id: batchId, order_id: orderId });
       return { orderId, batchId };
     } catch {
@@ -275,9 +285,9 @@ export class AppwriteMarketplaceRepository implements MarketplaceRepository {
       await deleteRows(TABLES.orderItems);
       await deleteRows(TABLES.batchOrders);
       await deleteRows(TABLES.orders);
-      for (const product of DEMO_PRODUCTS) {
+      await Promise.all(DEMO_PRODUCTS.map(async (product) => {
         if (await this.get(TABLES.products, product.id)) await this.update(TABLES.products, product.id, { inventory: product.inventory, active: product.active });
-      }
+      }));
       const batch = getDemoBatchSnapshot();
       if (await this.get(TABLES.batches, batch.id)) {
         await this.update(TABLES.batches, batch.id, {

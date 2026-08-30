@@ -9,7 +9,7 @@
   },
   "settings": {
     "services": {
-      "account": false,
+      "account": true,
       "databases": true,
       "functions": true,
       "sites": true,

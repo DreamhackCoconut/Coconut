@@ -464,4 +464,4 @@ export function getDefaultSeller(): Seller {
   return DEMO_SELLERS[0];
 }
 
-export const DEMO_MARKETPLACE_LABEL = 'DEMO MARKETPLACE DATA';
+export const DEMO_MARKETPLACE_LABEL = 'Demo marketplace data';

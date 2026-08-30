@@ -23,7 +23,7 @@
 - [ ] Open Operations
 - [ ] Optimize the pickup route
 - [ ] Explain weather/departure risk
-- [ ] Open Artisan intelligence
+- [ ] Open the maker workspace
 - [ ] Close with the Coconut pitch
 
 ## Canonical state

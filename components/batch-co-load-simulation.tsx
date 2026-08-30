@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Check, Layers, Package, Sparkles } from 'lucide-react';
+import { Box, Check, Info, Layers, Package } from 'lucide-react';
 import type { CartLine, Product, Quote } from '@/lib/domain/types';
 
 export function BatchCoLoadSimulation({
@@ -25,7 +25,7 @@ export function BatchCoLoadSimulation({
         <div className="co-load-title">
           <Layers size={16} color="var(--teal)" />
           <div>
-            <span className="tiny-label">Consolidation Engine</span>
+          <span className="tiny-label">Carton layout</span>
             <h3>Batch Co-Load Packing Simulation</h3>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function BatchCoLoadSimulation({
             <strong style={{ color: 'var(--teal-deep)' }}>+42% efficiency</strong>
           </div>
           <div className="co-load-note">
-            <Sparkles size={13} color="var(--teal)" />
+            <Info size={13} color="var(--teal)" />
             <span>Items share dimensional volume rather than billing minimum empty weight.</span>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Check, CircleHelp, MapPin, Package, Plus, Sparkles, Star, Tag, Weight, X } from 'lucide-react';
+import { Box, Check, CircleHelp, MapPin, Package, Plus, Star, Tag, Weight, X } from 'lucide-react';
 import Image from 'next/image';
 import type { Product, Seller } from '@/lib/domain/types';
 

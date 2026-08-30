@@ -94,7 +94,9 @@ function ProductCard({
   );
 }
 
-export function ShopView({ products, sellers, departures, batch, cartLines, onAdd, onOpenCart }: { products: Product[]; sellers: Seller[]; departures: Departure[]; batch: BatchSnapshot; cartLines: CartLine[]; onAdd: (product: Product) => void; onOpenCart: () => void }) {
+export type ShopViewMode = 'introduction' | 'collection';
+
+export function ShopView({ products, sellers, departures, batch, cartLines, onAdd, onOpenCart, onOpenCollection, mode = 'collection' }: { products: Product[]; sellers: Seller[]; departures: Departure[]; batch: BatchSnapshot; cartLines: CartLine[]; onAdd: (product: Product) => void; onOpenCart: () => void; onOpenCollection: () => void; mode?: ShopViewMode }) {
   const [category, setCategory] = useState<'All' | ProductCategory>('All');
   const [search, setSearch] = useState('');
   const [activeArtisanIndex, setActiveArtisanIndex] = useState(0);
@@ -183,11 +185,12 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
     }).slice(0, 12);
   }, [category, products, search]);
   const cartIds = new Set(cartLines.map((line) => line.productId));
+  const isIntroduction = mode === 'introduction';
 
   return (
-    <main className="content">
+    <main className={`content ${isIntroduction ? 'introduction-view' : 'collection-view'}`}>
       {/* Floating Particles for Add-to-cart */}
-      {particles.map((p) => (
+      {!isIntroduction ? particles.map((p) => (
         <span
           key={p.id}
           className="cart-particle"
@@ -199,9 +202,9 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
           }}
           aria-hidden="true"
         />
-      ))}
+      )) : null}
 
-      <section className="hero-grid motion-fade">
+      {isIntroduction ? <section className="hero-grid motion-fade">
         <div className="hero-copy">
           {/* Flat Minimalist Artisan Micro-Spotlight */}
           {spotlightedSeller ? (
@@ -223,7 +226,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
             <button className="button-primary pressable" type="button" onClick={onOpenCart}>
               See the shared journey <ArrowRight size={15} />
             </button>
-            <button className="button-secondary pressable" type="button" onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}>
+            <button className="button-secondary pressable" type="button" onClick={onOpenCollection}>
               Browse island pieces
             </button>
           </div>
@@ -233,8 +236,8 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         <aside className="hero-aside">
           <div>
             <div className="hero-aside-header">
-              <span className="eyebrow" style={{ color: '#8bd7d4' }}>Pacific Gateway</span>
-              <span className="radar-live-pill">VESSEL ACTIVE</span>
+              <span className="eyebrow" style={{ color: '#8bd7d4' }}>Pacific gateway</span>
+              <span className="radar-live-pill">Vessel active</span>
             </div>
 
             <div className="hero-aside-body">
@@ -273,15 +276,15 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
             </div>
           </div>
         </aside>
-      </section>
+      </section> : null}
 
-      <section className="signal-band motion-stagger" aria-label="Coconut network signals">
+      {isIntroduction ? <section className="signal-band motion-stagger" aria-label="Coconut network signals">
         <div className="signal-cell" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">The network effect</span><strong>{orderCount} orders moving together</strong><p>Shared pickup, shared freight, less empty ocean.</p></div>
         <div className="signal-cell" style={{ ['--stagger' as string]: 1 }}><span className="tiny-label">Local makers</span><strong>{sellerCount} workshops</strong><p>Across Rarotonga’s coast.</p></div>
         <div className="signal-cell" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">Current signal</span><strong><ShipWheel size={18} style={{ display: 'inline', verticalAlign: '-3px' }} /> {batch.weatherLabel.toLowerCase()} seas</strong><p>Route reliability is part of every recommendation.</p></div>
-      </section>
+      </section> : null}
 
-      <section ref={howReveal.ref} className={`how-it-works ${howReveal.className}`} aria-labelledby="how-coconut-works">
+      {isIntroduction ? <section ref={howReveal.ref} className={`how-it-works ${howReveal.className}`} aria-labelledby="how-coconut-works">
         <div className="how-header"><div><span className="eyebrow">The simple version</span><h2 id="how-coconut-works" className="section-heading">How <em>Coconut</em> works</h2></div><p>Independent makers stay independent. Coconut coordinates the expensive movement between them.</p></div>
         <ol className="how-grid">
           <li className="how-step"><span className="how-step-index">01</span><div><h3>Shop local</h3><p>Buy directly from island artisans and discover the story behind each piece.</p></div></li>
@@ -289,14 +292,27 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
           <li className="how-step"><span className="how-step-index"><Box size={17} /></span><div><h3>Pack smarter</h3><p>Carton fit and marginal shipping cost shape the next recommendation.</p></div></li>
           <li className="how-step"><span className="how-step-index"><RouteIcon size={17} /></span><div><h3>Route smarter</h3><p>Pickup windows, vehicle capacity, and marine conditions inform the move.</p></div></li>
         </ol>
-      </section>
+      </section> : null}
 
-      <section id="collection" ref={collectionReveal.ref} className={`section-topline ${collectionReveal.className}`}>
+      {isIntroduction ? (
+        <section className="intro-collection-cta" aria-labelledby="intro-collection-title">
+          <div>
+            <span className="eyebrow">Next on the island</span>
+            <h2 id="intro-collection-title" className="section-heading">Find a piece with a <em>place.</em></h2>
+            <p>Explore small-batch objects from island workshops and build a fair shared parcel.</p>
+          </div>
+          <button className="button-primary pressable" type="button" onClick={onOpenCollection}>
+            Explore the collection <ArrowRight size={15} />
+          </button>
+        </section>
+      ) : null}
+
+      {!isIntroduction ? <section id="collection" ref={collectionReveal.ref} className={`section-topline ${collectionReveal.className}`}>
         <div><span className="eyebrow">The collection</span><h2 className="section-heading">Pieces with a <em>place</em></h2></div>
         <p>Small-batch objects from fictional island workshops, seeded for this demo and ready to join your next departure.</p>
-      </section>
+      </section> : null}
 
-      <div className="product-controls">
+      {!isIntroduction ? <div className="product-controls">
         <div className="filter-group-wrap" ref={filterNavRef} role="tablist" aria-label="Filter products by category">
           <span
             className="filter-pill-indicator"
@@ -332,9 +348,9 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
           />
         </label>
         <span className="result-count">{visibleProducts.length} of {products.length} pieces</span>
-      </div>
+      </div> : null}
 
-      <div className="product-grid motion-stagger" aria-live="polite">
+      {!isIntroduction ? <div className="product-grid motion-stagger" aria-live="polite">
         {visibleProducts.map((product, index) => (
           <ProductCard
             key={product.id}
@@ -346,20 +362,24 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
             onQuickView={(p) => setPreviewProduct(p)}
           />
         ))}
-      </div>
+      </div> : null}
 
-      <div className="notice" style={{ marginTop: 24 }}><UsersRound size={16} /><span><strong>Try the proof point:</strong> add the $32 Handwoven Coastal Basket, then add Shell Earrings. The earrings ride inside the same parcel for <strong>$0 estimated shipping delta.</strong></span></div>
-      <div className="footer-note"><span><MapPin size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> Rarotonga → Auckland → everywhere</span><span>Demo marketplace data · deterministic fallback ready</span></div>
+      {!isIntroduction ? (
+        <>
+          <div className="notice" style={{ marginTop: 24 }}><UsersRound size={16} /><span><strong>Try the proof point:</strong> add the $32 Handwoven Coastal Basket, then add Shell Earrings. The earrings ride inside the same parcel for <strong>$0 estimated shipping delta.</strong></span></div>
+          <div className="footer-note"><span><MapPin size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> Rarotonga → Auckland → everywhere</span><span>Demo marketplace data · deterministic fallback ready</span></div>
 
-      {/* Quick View Drawer Modal */}
-      {previewProduct ? (
-        <ProductModal
-          product={previewProduct}
-          seller={sellerMap.get(previewProduct.sellerId)}
-          added={cartIds.has(previewProduct.id)}
-          onAdd={handleAddWithParticle}
-          onClose={() => setPreviewProduct(null)}
-        />
+          {/* Quick View Drawer Modal */}
+          {previewProduct ? (
+            <ProductModal
+              product={previewProduct}
+              seller={sellerMap.get(previewProduct.sellerId)}
+              added={cartIds.has(previewProduct.id)}
+              onAdd={handleAddWithParticle}
+              onClose={() => setPreviewProduct(null)}
+            />
+          ) : null}
+        </>
       ) : null}
     </main>
   );

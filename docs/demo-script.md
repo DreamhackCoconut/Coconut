@@ -4,7 +4,7 @@
 
 “Small island artisans can reach global customers online, but shipping every seller’s orders independently is inefficient.”
 
-Open the marketplace and point out **Island-made. Smarter shipped.**, independent makers, the shared shipment, and the next departure.
+Open the marketplace and point out **Made close. Moved together.**, independent makers, the shared shipment, and the next departure.
 
 ## 10–25 seconds — show the economics
 
@@ -17,7 +17,7 @@ Add **Handwoven Coastal Basket**. Open the cart and show:
 
 Say: “The product price stays with the artisan. Coconut changes the logistics price as compatible orders share fixed freight.”
 
-## 25–40 seconds — show the Coconut moment
+## 25–40 seconds — show the Coconut detail
 
 Point to **Shell Earrings** and the **+$0.00 shipping** explanation. Say: “Coconut evaluates physical packing and marginal shipping cost, not just customer similarity.” Add the earrings and show the quote remain in the same shipping bracket.
 

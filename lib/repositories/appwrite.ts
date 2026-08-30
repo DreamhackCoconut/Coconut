@@ -141,7 +141,10 @@ export function createAppwriteServerClient(): { client: Client; tablesDB: Tables
   const endpoint = process.env.APPWRITE_ENDPOINT ?? process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.APPWRITE_PROJECT_ID ?? process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const apiKey = process.env.APPWRITE_API_KEY;
-  const databaseId = process.env.APPWRITE_DATABASE_ID;
+  // The checked-in TablesDB manifest uses the stable `coconut` database ID.
+  // An environment override remains available for a separately named project,
+  // but a second secret is not required for the standard deployment.
+  const databaseId = process.env.APPWRITE_DATABASE_ID ?? 'coconut';
   const signature = [endpoint, projectId, apiKey, databaseId].join('\u0000');
   if (signature === cachedClientSignature) return cachedServerClient ?? null;
   cachedClientSignature = signature;

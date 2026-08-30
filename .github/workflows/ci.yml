@@ -27,6 +27,8 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
+      - name: Check design guardrails
+        run: npm run lint:design
       - name: Run acceptance tests
         run: npm test
       - name: Build site
@@ -99,6 +101,9 @@ jobs:
                 ;;
               appwrite/functions.json|functions/*|scripts/build-functions.mjs)
                 functions=true
+                ;;
+              scripts/provision-appwrite.ts)
+                tables=true
                 ;;
               appwrite/sites.json|app/*|components/*|public/*|next.config.mjs|postcss.config.mjs|tailwind.config.ts)
                 site=true
@@ -180,12 +185,41 @@ jobs:
 
       - name: Deploy TablesDB schema
         if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.tables == 'true'
-        run: appwrite push tables --all --force
+        shell: bash
+        run: |
+          set -o pipefail
+          appwrite push tables --all --force 2>&1 | tee tables-deploy.log
+          if grep -q "Error:" tables-deploy.log; then
+            echo "Appwrite reported a TablesDB deployment error."
+            exit 1
+          fi
 
       - name: Deploy Appwrite Functions
         if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.functions == 'true'
-        run: appwrite push functions --all --force
+        shell: bash
+        run: |
+          set -o pipefail
+          appwrite push functions --all --force 2>&1 | tee functions-deploy.log
+          if grep -q "Error:" functions-deploy.log; then
+            echo "Appwrite reported a Functions deployment error."
+            exit 1
+          fi
+
+      - name: Install dependencies for schema reconciliation
+        if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.tables == 'true'
+        run: npm ci
+
+      - name: Reconcile TablesDB columns and indexes
+        if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.tables == 'true'
+        run: npm run appwrite:provision
 
       - name: Deploy Appwrite Site
         if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.site == 'true'
-        run: appwrite push sites --all --force
+        shell: bash
+        run: |
+          set -o pipefail
+          appwrite push sites --all --force 2>&1 | tee site-deploy.log
+          if grep -q "Error:" site-deploy.log; then
+            echo "Appwrite reported a Site deployment error."
+            exit 1
+          fi

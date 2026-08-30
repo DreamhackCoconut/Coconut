@@ -63,6 +63,9 @@ function RecommendationCard({ recommendation, expanded, onToggle, onAdd }: { rec
   );
 }
 
+import { RouteJourneyVisualizer } from '@/components/route-journey-visualizer';
+import { BatchCoLoadSimulation } from '@/components/batch-co-load-simulation';
+
 export function CartView({ products, sellers: _sellers, quote, recommendations, lines, destination, loading, error, onDestinationChange, onQuantityChange, onRemove, onAdd, onPlaceOrder, onContinueShopping }: { products: Product[]; sellers: Seller[]; quote: Quote | null; recommendations: Recommendation[]; lines: CartLine[]; destination: Destination; loading: boolean; error?: string; onDestinationChange: (destination: Destination) => void; onQuantityChange: (productId: string, quantity: number) => void; onRemove: (productId: string) => void; onAdd: (product: Product) => void; onPlaceOrder: () => void; onContinueShopping: () => void }) {
   const [expandedRecommendation, setExpandedRecommendation] = useState<string>();
   const productMap = new Map(products.map((product) => [product.id, product]));
@@ -71,18 +74,87 @@ export function CartView({ products, sellers: _sellers, quote, recommendations, 
 
   return (
     <main className="content">
-      <div className="cart-page-heading motion-fade"><button className="button-secondary button-small pressable cart-continue" type="button" onClick={onContinueShopping}><ArrowLeft size={13} /> Continue browsing</button><span className="eyebrow">Your shared journey</span><h1 className="section-heading">A little more room<br /><em>goes a long way.</em></h1></div>
-      <div className="cart-layout">
+      <div className="cart-page-heading motion-fade">
+        <button className="button-secondary button-small pressable cart-continue" type="button" onClick={onContinueShopping}>
+          <ArrowLeft size={13} /> Continue browsing
+        </button>
+        <span className="eyebrow">Your shared journey</span>
+        <h1 className="section-heading">A little more room<br /><em>goes a long way.</em></h1>
+      </div>
+
+      {/* Interactive Island-to-World Journey Visualizer */}
+      <RouteJourneyVisualizer destination={destination} />
+
+      <div className="cart-layout" style={{ paddingTop: 20 }}>
         <section>
           <div className="panel panel-pad">
-            <div className="panel-header"><div><p className="panel-kicker">Basket · {lines.length} {lines.length === 1 ? 'piece' : 'pieces'}</p><h2 className="panel-title">Your island finds</h2></div><Leaf size={20} color="var(--teal)" /></div>
-            {lines.length ? <div className="cart-lines" style={{ marginTop: 18 }}>{lines.map((line) => { const product = productMap.get(line.productId); return product ? <CartItem key={line.productId} product={product} quantity={line.quantity} onChange={(quantity) => onQuantityChange(line.productId, quantity)} onRemove={() => onRemove(line.productId)} /> : null; })}</div> : <div className="empty-state" style={{ marginTop: 18 }}><Package size={23} color="var(--teal)" style={{ marginBottom: 13, marginInline: 'auto' }} /><h3>Your parcel is waiting.</h3><p>Head back to the collection and choose a piece to start a shared journey.</p></div>}
-            <div className="carton-list"><span className="tiny-label" style={{ alignSelf: 'center', marginRight: 3 }}>packing plan</span>{quote?.packing.boxes.map((box, index) => <span className="carton-chip" key={`${box.cartonCode}-${index}`}><Package size={11} style={{ display: 'inline', verticalAlign: '-2px' }} /> {box.cartonCode} · {Math.round(box.utilization * 100)}%</span>) ?? <span className="muted" style={{ fontSize: 11 }}>Calculated after you add a piece</span>}</div>
+            <div className="panel-header">
+              <div>
+                <p className="panel-kicker">Basket · {lines.length} {lines.length === 1 ? 'piece' : 'pieces'}</p>
+                <h2 className="panel-title">Your island finds</h2>
+              </div>
+              <Leaf size={20} color="var(--teal)" />
+            </div>
+            {lines.length ? (
+              <div className="cart-lines" style={{ marginTop: 18 }}>
+                {lines.map((line) => {
+                  const product = productMap.get(line.productId);
+                  return product ? (
+                    <CartItem
+                      key={line.productId}
+                      product={product}
+                      quantity={line.quantity}
+                      onChange={(quantity) => onQuantityChange(line.productId, quantity)}
+                      onRemove={() => onRemove(line.productId)}
+                    />
+                  ) : null;
+                })}
+              </div>
+            ) : (
+              <div className="empty-state" style={{ marginTop: 18 }}>
+                <Package size={23} color="var(--teal)" style={{ marginBottom: 13, marginInline: 'auto' }} />
+                <h3>Your parcel is waiting.</h3>
+                <p>Head back to the collection and choose a piece to start a shared journey.</p>
+              </div>
+            )}
+            <div className="carton-list">
+              <span className="tiny-label" style={{ alignSelf: 'center', marginRight: 3 }}>packing plan</span>
+              {quote?.packing.boxes.map((box, index) => (
+                <span className="carton-chip" key={`${box.cartonCode}-${index}`}>
+                  <Package size={11} style={{ display: 'inline', verticalAlign: '-2px' }} /> {box.cartonCode} · {Math.round(box.utilization * 100)}%
+                </span>
+              )) ?? <span className="muted" style={{ fontSize: 11 }}>Calculated after you add a piece</span>}
+            </div>
           </div>
 
+          {/* 3D / 2.5D Batch Co-Load Simulation preview */}
+          {lines.length ? (
+            <BatchCoLoadSimulation lines={lines} products={products} quote={quote} />
+          ) : null}
+
           <section className="recommendations">
-            <div className="section-topline" style={{ margin: '0 0 18px' }}><div><span className="eyebrow">Shipping-aware suggestions</span><h2 className="panel-title" style={{ marginTop: 11 }}>Good company for your cart</h2></div><p>Ranked by fit, readiness, margin, and the space already moving with you.</p></div>
-            {recommendations.length ? <div className="recommendation-grid motion-stagger">{recommendations.slice(0, 3).map((recommendation) => <RecommendationCard key={recommendation.product.id} recommendation={recommendation} expanded={expandedRecommendation === recommendation.product.id} onToggle={() => setExpandedRecommendation((current) => current === recommendation.product.id ? undefined : recommendation.product.id)} onAdd={() => onAdd(recommendation.product)} />)}</div> : <div className="notice"><Waves size={16} /> Add a piece to unlock recommendations that understand parcel fit.</div>}
+            <div className="section-topline" style={{ margin: '24px 0 18px' }}>
+              <div>
+                <span className="eyebrow">Shipping-aware suggestions</span>
+                <h2 className="panel-title" style={{ marginTop: 11 }}>Good company for your cart</h2>
+              </div>
+              <p>Ranked by fit, readiness, margin, and the space already moving with you.</p>
+            </div>
+            {recommendations.length ? (
+              <div className="recommendation-grid motion-stagger">
+                {recommendations.slice(0, 3).map((recommendation) => (
+                  <RecommendationCard
+                    key={recommendation.product.id}
+                    recommendation={recommendation}
+                    expanded={expandedRecommendation === recommendation.product.id}
+                    onToggle={() => setExpandedRecommendation((current) => current === recommendation.product.id ? undefined : recommendation.product.id)}
+                    onAdd={() => onAdd(recommendation.product)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="notice"><Waves size={16} /> Add a piece to unlock recommendations that understand parcel fit.</div>
+            )}
           </section>
         </section>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CloudSun, Gauge, LocateFixed, MapPinned, Route as RouteIcon, Settings2, Sparkles, TimerReset, Truck, Waves } from 'lucide-react';
+import { Check, CloudSun, Gauge, LocateFixed, MapPinned, Route as RouteIcon, Settings2, ShipWheel, Sparkles, TimerReset, Truck, Waves } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { RouteOptimizationResult } from '@/lib/domain/types';
 import { getOperationsDemoData } from '@/lib/operations';
@@ -37,13 +37,83 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
 
   return (
     <main className="content">
-      <section className="ops-hero motion-fade"><div><span className="eyebrow">Operations · {selectedDeparture?.label ?? 'Friday batch'}</span><h1 className="section-heading" style={{ marginTop: 14 }}>Make the island<br /><em>move together.</em></h1></div><div><p>Seven artisan stops, two vans, one consolidation hub. See the baseline and let the constrained optimizer tighten the loop.</p><button className="button-primary pressable" type="button" onClick={onOptimize} disabled={optimizing} style={{ marginTop: 18 }}>{optimizing ? 'Solving route…' : <>Optimize pickup route <RouteIcon size={14} /></>}</button></div></section>
+      <section className="ops-hero motion-fade">
+        <div>
+          <span className="eyebrow">Operations · {selectedDeparture?.label ?? 'Friday batch'}</span>
+          <h1 className="section-heading" style={{ marginTop: 14 }}>Make the island<br /><em>move together.</em></h1>
+        </div>
+        <div>
+          <p>Seven artisan stops, two vans, one consolidation hub. See the baseline and let the constrained optimizer tighten the loop.</p>
+          <button className="button-primary pressable" type="button" onClick={onOptimize} disabled={optimizing} style={{ marginTop: 18 }}>
+            {optimizing ? 'Solving route…' : <>Optimize pickup route <RouteIcon size={14} /></>}
+          </button>
+        </div>
+      </section>
+
+      {/* Live Oceanic Weather & Telemetry Banner */}
+      <section className="ocean-telemetry-banner motion-fade" aria-label="Ocean telemetry and departure signals">
+        <div className="telemetry-item">
+          <Waves size={16} className="wave-icon-pulse" />
+          <div>
+            <span className="tiny-label">Tide & Swell</span>
+            <strong>1.4m moderate swell · High tide 16:40</strong>
+          </div>
+        </div>
+        <div className="telemetry-item">
+          <CloudSun size={16} color="var(--teal)" />
+          <div>
+            <span className="tiny-label">Pacific Wind</span>
+            <strong>14 kts ESE · Trade winds stable</strong>
+          </div>
+        </div>
+        <div className="telemetry-item">
+          <ShipWheel size={16} color="var(--coral)" />
+          <div>
+            <span className="tiny-label">Vessel Readiness</span>
+            <strong style={{ color: 'var(--teal-deep)' }}>Optimal Departure Window</strong>
+          </div>
+        </div>
+      </section>
 
       <section className="metric-grid motion-stagger" aria-label="Batch metrics">
-        <div className="metric-card" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">orders in batch</span><strong>{orderCount}</strong><p><UsersIcon /> 7 participating artisans</p></div>
-        <div className="metric-card" style={{ ['--stagger' as string]: 1 }}><span className="tiny-label">optimized distance</span><strong>{km(optimized.totalDistanceMeters)}</strong><p><Gauge /> {savingsPercent}% shorter than baseline</p></div>
-        <div className="metric-card" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">pickup time</span><strong>{hours(optimized.totalDurationSeconds)}</strong><p><TimerReset /> includes handoff windows</p></div>
-        <div className="metric-card" style={{ ['--stagger' as string]: 3 }}><span className="tiny-label">optimizer mode</span><strong style={{ fontSize: 23 }}>{optimized.optimizerMode === 'ortools' ? 'OR-Tools' : 'TS fallback'}</strong><p><Settings2 /> deterministic constraints</p></div>
+        <div className="metric-card" style={{ ['--stagger' as string]: 0 }}>
+          <div className="metric-header">
+            <span className="tiny-label">orders in batch</span>
+            {/* Sparkline */}
+            <svg className="sparkline" viewBox="0 0 60 20" fill="none">
+              <path d="M 0 15 Q 15 12, 30 8 T 60 4" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <strong>{orderCount}</strong>
+          <p><UsersIcon /> 7 participating artisans</p>
+        </div>
+        <div className="metric-card" style={{ ['--stagger' as string]: 1 }}>
+          <div className="metric-header">
+            <span className="tiny-label">optimized distance</span>
+            <svg className="sparkline" viewBox="0 0 60 20" fill="none">
+              <path d="M 0 6 Q 20 10, 40 14 T 60 18" stroke="var(--coral)" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <strong>{km(optimized.totalDistanceMeters)}</strong>
+          <p><Gauge /> {savingsPercent}% shorter than baseline</p>
+        </div>
+        <div className="metric-card" style={{ ['--stagger' as string]: 2 }}>
+          <div className="metric-header">
+            <span className="tiny-label">pickup time</span>
+            <svg className="sparkline" viewBox="0 0 60 20" fill="none">
+              <path d="M 0 16 Q 15 10, 30 12 T 60 5" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <strong>{hours(optimized.totalDurationSeconds)}</strong>
+          <p><TimerReset /> includes handoff windows</p>
+        </div>
+        <div className="metric-card" style={{ ['--stagger' as string]: 3 }}>
+          <div className="metric-header">
+            <span className="tiny-label">optimizer mode</span>
+          </div>
+          <strong style={{ fontSize: 23 }}>{optimized.optimizerMode === 'ortools' ? 'OR-Tools' : 'TS fallback'}</strong>
+          <p><Settings2 /> deterministic constraints</p>
+        </div>
       </section>
 
       <section className="ops-grid">

@@ -215,19 +215,47 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
 
   return <div className="app-shell">
     <a className="skip-link" href="#main-content">Skip to main content</a>
-    <header className="topbar">
-      <button className="brand pressable" type="button" onClick={() => navigate('shop')} aria-label="Coconut home">
-        <span className="brand-mark" aria-hidden="true"><CoconutMark /></span><span><span className="brand-name">Coconut</span><span className="brand-note">island-made logistics</span></span>
-      </button>
-      <nav className="main-nav" aria-label="Primary navigation" ref={navRef}>
-        <span className="nav-indicator" aria-hidden="true" style={{ transform: `translateX(${navIndicator.x}px)`, width: navIndicator.width }} />
-        <button ref={(el) => { if (view === 'shop' && !showProduct) activeNavButtonRef.current = el; }} className={`nav-button ${view === 'shop' && !showProduct ? 'active' : ''}`} type="button" aria-current={view === 'shop' && !showProduct ? 'page' : undefined} onClick={() => navigate('shop')}>Shop</button>
-        <button ref={(el) => { if (view === 'cart') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'cart' ? 'active' : ''}`} type="button" aria-current={view === 'cart' ? 'page' : undefined} onClick={() => navigate('cart')}>Cart</button>
-        <button ref={(el) => { if (view === 'operations') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'operations' ? 'active' : ''}`} type="button" aria-current={view === 'operations' ? 'page' : undefined} onClick={() => navigate('operations')}>Operations</button>
-        <button ref={(el) => { if (view === 'artisan') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'artisan' ? 'active' : ''}`} type="button" aria-current={view === 'artisan' ? 'page' : undefined} onClick={() => navigate('artisan')}>Artisan</button>
-      </nav>
-      <div className="topbar-actions">{account ? <button className="account-trigger pressable" type="button" onClick={() => void handleSignOut()} aria-label={`Sign out ${account.name}`}><span className="account-avatar" aria-hidden="true">{accountInitials(account)}</span><span className="account-name">{account.name}</span></button> : <button className="account-trigger pressable" type="button" onClick={() => setAccountDialogOpen(true)}>Sign in</button>}<button className="cart-trigger pressable" type="button" onClick={() => navigate('cart')} aria-label={`Open cart with ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}><ShoppingBag size={17} /><span className="cart-count" key={cartCount} aria-hidden="true">{cartCount}</span></button></div>
-    </header>
+    <div className="topbar-wrapper">
+      <header className="topbar">
+        {/* Left Island: Brand */}
+        <div className="brand-island">
+          <button className="brand pressable" type="button" onClick={() => navigate('shop')} aria-label="Coconut home">
+            <span className="brand-mark" aria-hidden="true"><CoconutMark /></span>
+            <span>
+              <span className="brand-name">Coconut</span>
+              <span className="brand-note">island-made logistics</span>
+            </span>
+          </button>
+        </div>
+
+        {/* Center Island: Main Navigation */}
+        <div className="main-nav-island">
+          <nav className="main-nav" aria-label="Primary navigation" ref={navRef}>
+            <span className="nav-indicator" aria-hidden="true" style={{ transform: `translateX(${navIndicator.x}px)`, width: navIndicator.width }} />
+            <button ref={(el) => { if (view === 'shop' && !showProduct) activeNavButtonRef.current = el; }} className={`nav-button ${view === 'shop' && !showProduct ? 'active' : ''}`} type="button" aria-current={view === 'shop' && !showProduct ? 'page' : undefined} onClick={() => navigate('shop')}>Shop</button>
+            <button ref={(el) => { if (view === 'cart') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'cart' ? 'active' : ''}`} type="button" aria-current={view === 'cart' ? 'page' : undefined} onClick={() => navigate('cart')}>Cart</button>
+            <button ref={(el) => { if (view === 'operations') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'operations' ? 'active' : ''}`} type="button" aria-current={view === 'operations' ? 'page' : undefined} onClick={() => navigate('operations')}>Operations</button>
+            <button ref={(el) => { if (view === 'artisan') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'artisan' ? 'active' : ''}`} type="button" aria-current={view === 'artisan' ? 'page' : undefined} onClick={() => navigate('artisan')}>Artisan</button>
+          </nav>
+        </div>
+
+        {/* Right Island: Account & Cart */}
+        <div className="topbar-actions-island">
+          {account ? (
+            <button className="account-trigger pressable" type="button" onClick={() => void handleSignOut()} aria-label={`Sign out ${account.name}`}>
+              <span className="account-avatar" aria-hidden="true">{accountInitials(account)}</span>
+              <span className="account-name">{account.name}</span>
+            </button>
+          ) : (
+            <button className="account-trigger pressable" type="button" onClick={() => setAccountDialogOpen(true)}>Sign in</button>
+          )}
+          <button id="cart-nav-button" className="cart-trigger pressable" type="button" onClick={() => navigate('cart')} aria-label={`Open cart with ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}>
+            <ShoppingBag size={15} />
+            <span className="cart-count" key={cartCount} aria-hidden="true">{cartCount}</span>
+          </button>
+        </div>
+      </header>
+    </div>
     <div id="main-content" tabIndex={-1}>{appContent}</div>
     <SiteFooter onJoin={() => setAccountDialogOpen(true)} />
     <div className="network-status"><span className="status-dot" /> {backendMode === 'appwrite-configured' ? 'appwrite-ready' : 'demo-fallback'} <CircleHelp size={12} aria-label={backendMode === 'appwrite-configured' ? 'Appwrite API configured; provider fallbacks remain available' : 'Appwrite API not configured; deterministic seeded data is active'} /><button className="network-reset" type="button" onClick={resetDemoState}>Reset demo</button></div>

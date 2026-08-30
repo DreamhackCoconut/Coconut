@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import type { BatchSnapshot, CartLine, Departure, Product, ProductCategory, Seller } from '@/lib/domain/types';
 import { useReveal } from '@/components/use-reveal';
+import { useCountUp } from '@/components/use-count-up';
 
 const categories: Array<'All' | ProductCategory> = ['All', 'Basketry', 'Jewelry', 'Woodwork', 'Textiles', 'Ceramics', 'Prints'];
 
@@ -40,6 +41,9 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
   const collectionReveal = useReveal<HTMLElement>();
   const selectedDeparture = departures.find((departure) => departure.id === batch.departureId) ?? departures[1] ?? departures[0];
   const utilization = selectedDeparture ? Math.max(batch.currentWeightKg / selectedDeparture.maxWeightKg, batch.currentVolumeM3 / selectedDeparture.maxVolumeM3) : 0;
+  const utilizationPercent = useCountUp(Math.round(utilization * 100));
+  const orderCount = useCountUp(batch.orderCount);
+  const sellerCount = useCountUp(sellers.length);
   const sellerMap = useMemo(() => new Map(sellers.map((seller) => [seller.id, seller])), [sellers]);
   const visibleProducts = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -70,15 +74,15 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
           <p>One parcel network for many small makers. Fill the space already moving across the Pacific.</p>
           <div className="batch-stat">
             <span>batch filled</span>
-            <strong>{Math.round(utilization * 100)}%</strong>
+            <strong>{utilizationPercent}%</strong>
             <div className="progress-track" aria-label={`${Math.round(utilization * 100)} percent of batch filled`}><div className="progress-fill" style={{ ['--progress' as string]: utilization }} /></div>
           </div>
         </aside>
       </section>
 
       <section className="signal-band motion-stagger" aria-label="Coconut network signals">
-        <div className="signal-cell" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">The network effect</span><strong>{batch.orderCount} orders moving together</strong><p>Shared pickup, shared freight, less empty ocean.</p></div>
-        <div className="signal-cell" style={{ ['--stagger' as string]: 1 }}><span className="tiny-label">Local makers</span><strong>{sellers.length} workshops</strong><p>Across Rarotonga’s coast.</p></div>
+        <div className="signal-cell" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">The network effect</span><strong>{orderCount} orders moving together</strong><p>Shared pickup, shared freight, less empty ocean.</p></div>
+        <div className="signal-cell" style={{ ['--stagger' as string]: 1 }}><span className="tiny-label">Local makers</span><strong>{sellerCount} workshops</strong><p>Across Rarotonga’s coast.</p></div>
         <div className="signal-cell" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">Current signal</span><strong><ShipWheel size={18} style={{ display: 'inline', verticalAlign: '-3px' }} /> {batch.weatherLabel.toLowerCase()} seas</strong><p>Route reliability is part of every recommendation.</p></div>
       </section>
 

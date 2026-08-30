@@ -6,6 +6,7 @@ import type { RouteOptimizationResult } from '@/lib/domain/types';
 import { getOperationsDemoData } from '@/lib/operations';
 import { RouteMap } from '@/components/route-map';
 import { useReveal } from '@/components/use-reveal';
+import { useCountUp } from '@/components/use-count-up';
 
 export type OperationsData = ReturnType<typeof getOperationsDemoData>;
 
@@ -18,6 +19,8 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
   const [selectedDepartureId, setSelectedDepartureId] = useState<string>();
   const departuresReveal = useReveal<HTMLElement>();
   const stopsReveal = useReveal<HTMLElement>();
+  const orderCount = useCountUp(data?.batch.orderCount ?? 0);
+  const savingsPercent = useCountUp(data ? Math.round(data.savings.percent) : 0);
 
   useEffect(() => {
     if (data?.batch.departureId) setSelectedDepartureId(data.batch.departureId);
@@ -37,8 +40,8 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
       <section className="ops-hero motion-fade"><div><span className="eyebrow">Operations · {selectedDeparture?.label ?? 'Friday batch'}</span><h1 className="section-heading" style={{ marginTop: 14 }}>Make the island<br /><em>move together.</em></h1></div><div><p>Seven artisan stops, two vans, one consolidation hub. See the baseline and let the constrained optimizer tighten the loop.</p><button className="button-primary pressable" type="button" onClick={onOptimize} disabled={optimizing} style={{ marginTop: 18 }}>{optimizing ? 'Solving route…' : <>Optimize pickup route <RouteIcon size={14} /></>}</button></div></section>
 
       <section className="metric-grid motion-stagger" aria-label="Batch metrics">
-        <div className="metric-card" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">orders in batch</span><strong>{data.batch.orderCount}</strong><p><UsersIcon /> 7 participating artisans</p></div>
-        <div className="metric-card" style={{ ['--stagger' as string]: 1 }}><span className="tiny-label">optimized distance</span><strong>{km(optimized.totalDistanceMeters)}</strong><p><Gauge /> {Math.round(data.savings.percent)}% shorter than baseline</p></div>
+        <div className="metric-card" style={{ ['--stagger' as string]: 0 }}><span className="tiny-label">orders in batch</span><strong>{orderCount}</strong><p><UsersIcon /> 7 participating artisans</p></div>
+        <div className="metric-card" style={{ ['--stagger' as string]: 1 }}><span className="tiny-label">optimized distance</span><strong>{km(optimized.totalDistanceMeters)}</strong><p><Gauge /> {savingsPercent}% shorter than baseline</p></div>
         <div className="metric-card" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">pickup time</span><strong>{hours(optimized.totalDurationSeconds)}</strong><p><TimerReset /> includes handoff windows</p></div>
         <div className="metric-card" style={{ ['--stagger' as string]: 3 }}><span className="tiny-label">optimizer mode</span><strong style={{ fontSize: 23 }}>{optimized.optimizerMode === 'ortools' ? 'OR-Tools' : 'TS fallback'}</strong><p><Settings2 /> deterministic constraints</p></div>
       </section>

@@ -54,3 +54,65 @@ jobs:
       - name: Run optimizer tests
         run: python -m pytest -q tests
 
+  deploy:
+    name: Deploy to Appwrite
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [web, optimizer]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: appwrite-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+      APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+      APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check Appwrite deployment secrets
+        id: appwrite-secrets
+        shell: bash
+        run: |
+          if [[ -z "$APPWRITE_ENDPOINT" || -z "$APPWRITE_PROJECT_ID" || -z "$APPWRITE_API_KEY" ]]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Appwrite deployment skipped because APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, or APPWRITE_API_KEY is not configured."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pinned Appwrite CLI
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        run: npm install --global appwrite-cli@27.2.1
+
+      - name: Validate Appwrite deployment secrets
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        shell: bash
+        run: |
+          test -n "$APPWRITE_ENDPOINT" || { echo "APPWRITE_ENDPOINT is not configured"; exit 1; }
+          test -n "$APPWRITE_PROJECT_ID" || { echo "APPWRITE_PROJECT_ID is not configured"; exit 1; }
+          test -n "$APPWRITE_API_KEY" || { echo "APPWRITE_API_KEY is not configured"; exit 1; }
+
+      - name: Configure Appwrite CLI
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        run: appwrite client --endpoint "$APPWRITE_ENDPOINT" --project-id "$APPWRITE_PROJECT_ID" --key "$APPWRITE_API_KEY"
+
+      - name: Deploy TablesDB schema
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        run: appwrite push tables --all --force
+
+      - name: Deploy Appwrite Functions
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        run: appwrite push functions --all --force
+
+      - name: Deploy Appwrite Site
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        run: appwrite push sites --all --force

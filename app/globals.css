@@ -257,6 +257,8 @@ img { display: block; max-width: 100%; }
 @keyframes fade-only { from { opacity: 0; } to { opacity: 1; } }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
 @keyframes bump-in { 0% { transform: scale(.7); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes breathe { 0%, 100% { opacity: .45; transform: scale(.94); } 50% { opacity: 1; transform: scale(1); } }
+.loading-mark { display: inline-flex; vertical-align: -4px; color: var(--teal); animation: breathe 1.8s var(--ease-in-out) infinite; }
 
 /* Flying Add-to-cart particle */
 .cart-particle {
@@ -1440,6 +1442,6 @@ img { display: block; max-width: 100%; }
   *, *::before, *::after { transition-duration: .01ms !important; }
   .nav-button:active, .pressable:active, .product-card:hover, .recommendation-card:hover { transform: none; }
   .product-card:hover .product-image img { transform: none; }
-  .brand-mark svg, .hero-aside::after, .hero-dot, .cart-count, .skeleton::after { animation: none; }
+  .brand-mark svg, .hero-aside::after, .hero-dot, .cart-count, .skeleton::after, .loading-mark { animation: none; }
   .reveal { opacity: 1; transform: none; }
 }

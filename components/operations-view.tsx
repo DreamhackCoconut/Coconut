@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { RouteOptimizationResult } from '@/lib/domain/types';
 import { getOperationsDemoData } from '@/lib/operations';
 import { RouteMap } from '@/components/route-map';
+import { CoconutMark } from '@/components/coconut-mark';
 import { useReveal } from '@/components/use-reveal';
 import { useCountUp } from '@/components/use-count-up';
 
@@ -26,7 +27,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
     if (data?.batch.departureId) setSelectedDepartureId(data.batch.departureId);
   }, [data?.batch.departureId]);
 
-  if (!data || loading) return <main className="content"><div className="ops-hero motion-fade"><div><span className="eyebrow">Operations · live route room</span><h1 className="section-heading" style={{ marginTop: 14 }}>Make the island<br /><em>move together.</em></h1></div><p>Loading the current batch, pickup windows, and marine signal…</p></div><div className="metric-grid" aria-hidden="true">{[0, 1, 2, 3].map((index) => <div className="metric-card skeleton" key={index}>placeholder</div>)}</div><div className="panel skeleton" style={{ minHeight: 320, marginTop: 18 }}>placeholder</div><div className="notice" style={{ marginTop: 32 }}><Sparkles size={16} /> Demo operations data is deterministic, so the route room is ready even without provider credentials.</div></main>;
+  if (!data || loading) return <main className="content"><div className="ops-hero motion-fade"><div><span className="eyebrow">Operations · live route room</span><h1 className="section-heading" style={{ marginTop: 14 }}>Make the island<br /><em>move together.</em></h1></div><p><span className="loading-mark"><CoconutMark size={16} /></span> Loading the current batch, pickup windows, and marine signal…</p></div><div className="metric-grid" aria-hidden="true">{[0, 1, 2, 3].map((index) => <div className="metric-card skeleton" key={index}>placeholder</div>)}</div><div className="panel skeleton" style={{ minHeight: 320, marginTop: 18 }}>placeholder</div><div className="notice" style={{ marginTop: 32 }}><Sparkles size={16} /> Demo operations data is deterministic, so the route room is ready even without provider credentials.</div></main>;
   const optimized = data.optimized as RouteOptimizationResult;
   const baseline = data.baseline as RouteOptimizationResult;
   const distanceSaved = data.savings.distanceMeters;

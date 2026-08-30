@@ -36,7 +36,7 @@
       { "key": "name", "type": "varchar", "size": 180, "required": true },
       { "key": "slug", "type": "varchar", "size": 180, "required": true },
       { "key": "description", "type": "text", "required": true },
-      { "key": "category", "type": "enum", "elements": ["Jewelry", "Basketry", "Woodwork", "Textiles", "Ceramics", "Prints"], "required": true },
+      { "key": "category", "type": "varchar", "size": 32, "required": true },
       { "key": "tags_json", "type": "text", "required": true },
       { "key": "materials_json", "type": "text", "required": true },
       { "key": "colors_json", "type": "text", "required": true },
@@ -109,7 +109,7 @@
       { "key": "variable_cost_per_kg", "type": "double", "required": true },
       { "key": "variable_cost_per_m3", "type": "double", "required": true },
       { "key": "destination_zone", "type": "varchar", "size": 32, "required": true },
-      { "key": "status", "type": "enum", "elements": ["open", "limited", "closed"], "required": true },
+      { "key": "status", "type": "varchar", "size": 16, "required": true },
       { "key": "route_points_json", "type": "text", "required": true },
       { "key": "weather_risk", "type": "double", "required": true },
       { "key": "weather_label", "type": "varchar", "size": 32, "required": true }

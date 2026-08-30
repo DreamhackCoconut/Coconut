@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, CircleHelp, ShoppingBag, Waves, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccountDialog } from '@/components/account-dialog';
 import { ArtisanView } from '@/components/artisan-view';
 import { CartView } from '@/components/cart-view';
@@ -43,6 +43,9 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
   const [quoteError, setQuoteError] = useState<string>();
   const [order, setOrder] = useState<{ orderId: string; batchId: string }>();
   const [toast, setToast] = useState<string>();
+  const navRef = useRef<HTMLElement>(null);
+  const activeNavButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [navIndicator, setNavIndicator] = useState<{ x: number; width: number }>({ x: 0, width: 0 });
   const [account, setAccount] = useState<CoconutAccount | null>(null);
   const [accountReady, setAccountReady] = useState(false);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
@@ -52,6 +55,20 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
     getMarketplaceData().then((result) => { if (active) setData(result); });
     return () => { active = false; };
   }, []);
+
+  useLayoutEffect(() => {
+    function measure() {
+      const nav = navRef.current;
+      const button = activeNavButtonRef.current;
+      if (!nav || !button) return;
+      const navRect = nav.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      setNavIndicator({ x: buttonRect.left - navRect.left, width: buttonRect.width });
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [view, showProduct]);
 
   useEffect(() => {
     let active = true;
@@ -200,15 +217,16 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
     <a className="skip-link" href="#main-content">Skip to main content</a>
     <header className="topbar">
       <button className="brand pressable" type="button" onClick={() => navigate('shop')} aria-label="Coconut home">
-        <span className="brand-mark" aria-hidden="true"><Waves size={17} /></span><span><span className="brand-name">Coconut</span><span className="brand-note">island-made logistics</span></span>
+        <span className="brand-mark" aria-hidden="true"><CoconutMark /></span><span><span className="brand-name">Coconut</span><span className="brand-note">island-made logistics</span></span>
       </button>
-      <nav className="main-nav" aria-label="Primary navigation">
-        <button className={`nav-button ${view === 'shop' && !showProduct ? 'active' : ''}`} type="button" aria-current={view === 'shop' && !showProduct ? 'page' : undefined} onClick={() => navigate('shop')}>Shop</button>
-        <button className={`nav-button ${view === 'cart' ? 'active' : ''}`} type="button" aria-current={view === 'cart' ? 'page' : undefined} onClick={() => navigate('cart')}>Cart</button>
-        <button className={`nav-button ${view === 'operations' ? 'active' : ''}`} type="button" aria-current={view === 'operations' ? 'page' : undefined} onClick={() => navigate('operations')}>Operations</button>
-        <button className={`nav-button ${view === 'artisan' ? 'active' : ''}`} type="button" aria-current={view === 'artisan' ? 'page' : undefined} onClick={() => navigate('artisan')}>Artisan</button>
+      <nav className="main-nav" aria-label="Primary navigation" ref={navRef}>
+        <span className="nav-indicator" aria-hidden="true" style={{ transform: `translateX(${navIndicator.x}px)`, width: navIndicator.width }} />
+        <button ref={(el) => { if (view === 'shop' && !showProduct) activeNavButtonRef.current = el; }} className={`nav-button ${view === 'shop' && !showProduct ? 'active' : ''}`} type="button" aria-current={view === 'shop' && !showProduct ? 'page' : undefined} onClick={() => navigate('shop')}>Shop</button>
+        <button ref={(el) => { if (view === 'cart') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'cart' ? 'active' : ''}`} type="button" aria-current={view === 'cart' ? 'page' : undefined} onClick={() => navigate('cart')}>Cart</button>
+        <button ref={(el) => { if (view === 'operations') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'operations' ? 'active' : ''}`} type="button" aria-current={view === 'operations' ? 'page' : undefined} onClick={() => navigate('operations')}>Operations</button>
+        <button ref={(el) => { if (view === 'artisan') activeNavButtonRef.current = el; }} className={`nav-button ${view === 'artisan' ? 'active' : ''}`} type="button" aria-current={view === 'artisan' ? 'page' : undefined} onClick={() => navigate('artisan')}>Artisan</button>
       </nav>
-      <div className="topbar-actions">{account ? <button className="account-trigger pressable" type="button" onClick={() => void handleSignOut()} aria-label={`Sign out ${account.name}`}><span className="account-avatar" aria-hidden="true">{accountInitials(account)}</span><span className="account-name">{account.name}</span></button> : <button className="account-trigger pressable" type="button" onClick={() => setAccountDialogOpen(true)}>Sign in</button>}<button className="cart-trigger pressable" type="button" onClick={() => navigate('cart')} aria-label={`Open cart with ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}><ShoppingBag size={17} /><span className="cart-count" aria-hidden="true">{cartCount}</span></button></div>
+      <div className="topbar-actions">{account ? <button className="account-trigger pressable" type="button" onClick={() => void handleSignOut()} aria-label={`Sign out ${account.name}`}><span className="account-avatar" aria-hidden="true">{accountInitials(account)}</span><span className="account-name">{account.name}</span></button> : <button className="account-trigger pressable" type="button" onClick={() => setAccountDialogOpen(true)}>Sign in</button>}<button className="cart-trigger pressable" type="button" onClick={() => navigate('cart')} aria-label={`Open cart with ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}><ShoppingBag size={17} /><span className="cart-count" key={cartCount} aria-hidden="true">{cartCount}</span></button></div>
     </header>
     <div id="main-content" tabIndex={-1}>{appContent}</div>
     <SiteFooter onJoin={() => setAccountDialogOpen(true)} />
@@ -217,4 +235,14 @@ export function CoconutApp({ initialView = 'shop', initialProductSlug }: { initi
     {order ? <div className="overlay" role="presentation"><section className="confirmation" role="dialog" aria-modal="true" aria-labelledby="order-title"><button className="icon-close pressable" type="button" onClick={() => setOrder(undefined)} aria-label="Close order confirmation"><X size={16} /></button><div className="confirmation-mark"><Check size={21} /></div><h2 id="order-title">Shared parcel booked.</h2><p>Demo order <span className="mono">{order.orderId}</span> is attached to the Friday West Coast Batch. No payment was captured.</p><button className="button-primary pressable" type="button" onClick={() => { setOrder(undefined); navigate('shop'); }}>Back to the island <Waves size={14} /></button></section></div> : null}
     {accountDialogOpen ? <AccountDialog onClose={() => setAccountDialogOpen(false)} onAuthenticated={handleAuthenticated} /> : null}
   </div>;
+}
+
+function CoconutMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="10" r="1.3" fill="currentColor" />
+      <circle cx="14.4" cy="8.6" r="1.3" fill="currentColor" />
+      <path d="M4.5 13.4c2.6 2.3 5.7 3 8.8 2.2 3.1-.8 5.6-2.9 7-5.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+    </svg>
+  );
 }

@@ -60,17 +60,17 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
           </div>
         </div>
         <div className="telemetry-item">
-          <CloudSun size={16} color="var(--teal)" />
+          <CloudSun size={16} color="var(--accent-active)" />
           <div>
             <span className="tiny-label">Pacific Wind</span>
             <strong>14 kts ESE · Trade winds stable</strong>
           </div>
         </div>
         <div className="telemetry-item">
-          <ShipWheel size={16} color="var(--coral)" />
+          <ShipWheel size={16} color="var(--accent-active)" />
           <div>
             <span className="tiny-label">Vessel Readiness</span>
-            <strong style={{ color: 'var(--teal-deep)' }}>Optimal Departure Window</strong>
+            <strong style={{ color: 'var(--accent-active)' }}>Optimal departure window</strong>
           </div>
         </div>
       </section>
@@ -81,7 +81,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
           <span className="tiny-label">Orders in batch</span>
             {/* Sparkline */}
             <svg className="sparkline" viewBox="0 0 60 20" fill="none">
-              <path d="M 0 15 Q 15 12, 30 8 T 60 4" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 0 15 Q 15 12, 30 8 T 60 4" stroke="var(--accent-active)" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
           <strong>{orderCount}</strong>
@@ -91,7 +91,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
           <div className="metric-header">
             <span className="tiny-label">Optimized distance</span>
             <svg className="sparkline" viewBox="0 0 60 20" fill="none">
-              <path d="M 0 6 Q 20 10, 40 14 T 60 18" stroke="var(--coral)" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 0 6 Q 20 10, 40 14 T 60 18" stroke="var(--accent-active)" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
           <strong>{km(optimized.totalDistanceMeters)}</strong>
@@ -101,7 +101,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
           <div className="metric-header">
             <span className="tiny-label">Pickup time</span>
             <svg className="sparkline" viewBox="0 0 60 20" fill="none">
-              <path d="M 0 16 Q 15 10, 30 12 T 60 5" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 0 16 Q 15 10, 30 12 T 60 5" stroke="var(--accent-active)" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
           <strong>{hours(optimized.totalDurationSeconds)}</strong>
@@ -117,7 +117,7 @@ export function OperationsView({ data, loading, optimizing, onOptimize }: { data
       </section>
 
       <section className="ops-grid">
-        <div className="panel map-panel"><div className="panel-header"><div><p className="panel-kicker">Route map · Rarotonga</p><h2 className="panel-title">Pickup route comparison</h2></div><span className="tiny-label"><span className="status-dot" /> {optimized.routes.length} vehicles</span></div><RouteMap route={optimized} baseline={baseline} stops={data.stops} /></div>
+        <div className="panel map-panel"><div className="panel-header"><div><p className="panel-kicker">Route map · Rarotonga</p><h2 className="panel-title">Pickup route comparison</h2></div><span className="tiny-label"><span className="status-dot" /> {optimized.routes.length} vehicles</span></div><RouteMap route={optimized} baseline={baseline} stops={data.stops} /><p className="route-map-explainer"><MapPinned size={14} /> Each numbered dot is one artisan pickup. The blue line is the optimized order; the dashed line is the original sequential plan. The hub is where parcels come together before departure.</p></div>
         <div className="route-summary">
           <div className="panel"><p className="panel-kicker">Before / after</p><h2 className="panel-title">Route efficiency</h2><div className="route-comparison"><div className="route-choice"><span className="tiny-label">baseline</span><strong>{km(baseline.totalDistanceMeters)}</strong><p>sequential pickup</p></div><div className="route-choice active"><span className="tiny-label">optimized</span><strong>{km(optimized.totalDistanceMeters)}</strong><p>capacity + windows</p></div></div><div className="route-savings"><span className="tiny-label">distance saved</span><strong>{km(distanceSaved)} · {Math.round(data.savings.percent)}%</strong></div><details className="explanation-details"><summary>How was this optimized?</summary><p>OR-Tools scored the pickup loop while enforcing vehicle weight, parcel volume, seller pickup windows, handoff time, and the shared departure cutoff.</p></details></div>
           <div className="panel weather-card"><p className="panel-kicker">Marine signal · Open-Meteo</p><h2 className="panel-title">Departure confidence</h2><div className="weather-number"><strong>{Math.round(selectedWeatherRisk * 100)}%</strong><span>{sentenceCase(selectedDeparture?.weatherLabel ?? weather.label)}</span></div><p>{weather.explanation}</p><div className="weather-observations">{weather.observations.slice(0, 3).map((observation, index) => <div key={index}><strong>{observation.waveHeightM.toFixed(1)}m</strong><span>wave height</span></div>)}</div><details className="explanation-details explanation-details-dark"><summary>Why this departure?</summary><p>{selectedDeparture?.id === data.batch.departureId ? 'Friday balances shared-batch capacity, delivery timing, freight economics, and the vessel’s preferred wave and wind limits.' : `${selectedDeparture?.label ?? 'This option'} is selected for preview. It trades ${selectedDeparture?.weatherLabel.toLowerCase() ?? 'weather'} conditions against capacity, timing, and freight economics.`}</p></details></div>

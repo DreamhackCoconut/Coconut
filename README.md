@@ -119,19 +119,19 @@ npm run build
 npm run build:functions
 ```
 
-For a cloud project, use the checked-in `appwrite.config.json`, `appwrite/functions.json`, `appwrite/sites.json`, and `appwrite/tables.json`, then run `npm run appwrite:provision` and `npm run appwrite:seed`. `DEMO_MODE=true` keeps the canonical state reproducible; the API exposes `/demo/reset` for a reset before judging. For a deployed operator-only reset, set the server-side `DEMO_RESET_TOKEN`; the browser reset still restores the local judging state immediately.
+For a cloud project, use the checked-in `appwrite.config.json`, `appwrite/functions.json`, `appwrite/sites.json`, and `appwrite/tables.json`, then run `npm run appwrite:provision` and `npm run appwrite:seed`. Provisioning creates the canonical `coconut` database when needed, adds missing tables, columns, and indexes, and preserves existing rows; `APPWRITE_DATABASE_ID` is optional and only needed if a project deliberately uses another database ID. It does not silently change incompatible live columns. `DEMO_MODE=true` keeps the canonical state reproducible; the API exposes `/demo/reset` for a reset before judging. For a deployed operator-only reset, set the server-side `DEMO_RESET_TOKEN`; the browser reset still restores the local judging state immediately.
 
 ### Automatic Appwrite deployment
 
-The `Coconut checks` workflow validates every pull request and push to `main`. A push to `main` first compares the changed paths, then deploys only the affected Appwrite resource groups: `appwrite/tables.json` changes deploy TablesDB, function or shared backend changes deploy the Functions, and app or frontend changes deploy the Site. Changes to `appwrite.config.json` deploy all three. Documentation-only and workflow-only changes do not start an Appwrite deployment. The workflow installs a pinned Appwrite CLI version, uses the project’s allowed `s-2vcpu-2gb` resource specification, treats CLI-reported push errors as failures, and never deploys from pull requests.
+The `Coconut checks` workflow validates every pull request and push to `main`. A push to `main` first compares the changed paths, then deploys only the affected Appwrite resource groups: `appwrite/tables.json` or schema-provisioning changes deploy TablesDB, function or shared backend changes deploy the Functions, and app or frontend changes deploy the Site. Changes to `appwrite.config.json` deploy all three. Documentation-only and workflow-only changes do not start an Appwrite deployment. The workflow installs a pinned Appwrite CLI version, pushes the checked-in TablesDB manifest, then runs the idempotent schema reconciler so existing tables receive missing columns and indexes. It uses the project’s allowed `s-2vcpu-2gb` resource specification, treats CLI-reported push errors as failures, and never deploys from pull requests. A pull-request check showing `Deploy to Appwrite: skipped` is expected; deployment runs after the change reaches `main`.
 
 In the repository's **Settings → Secrets and variables → Actions**, add these secrets:
 
 - `APPWRITE_ENDPOINT` — the regional project endpoint, such as `https://<REGION>.cloud.appwrite.io/v1`
 - `APPWRITE_PROJECT_ID` — the Appwrite project ID
-- `APPWRITE_API_KEY` — a server-side deployment key with the minimum TablesDB, Functions, and Sites permissions needed to push resources
+- `APPWRITE_API_KEY` — a server-side deployment key with the TablesDB, columns, indexes, Functions, and Sites read/write scopes needed to push and reconcile resources; the canonical database ID is read from the checked-in manifest
 
-Keep runtime variables such as `EASYPOST_API_KEY`, `OPENROUTESERVICE_API_KEY`, `COMTRADE_API_KEY`, and `DEMO_RESET_TOKEN` in Appwrite Function/Site environment settings or local untracked environment files. They are not committed or printed by the workflow. Run `npm run appwrite:seed` intentionally once after a new project is provisioned; normal deploys do not reseed rows or overwrite live account data.
+Keep runtime variables such as `EASYPOST_API_KEY`, `OPENROUTESERVICE_API_KEY`, `COMTRADE_API_KEY`, and `DEMO_RESET_TOKEN` in Appwrite Function/Site environment settings or local untracked environment files. They are not committed or printed by the workflow. Run `npm run appwrite:seed` intentionally once after a new project is provisioned; schema deployment is automatic, while seed data is kept explicit so normal deploys do not overwrite live account data.
 
 ## Canonical demo path
 

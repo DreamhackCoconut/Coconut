@@ -19,12 +19,23 @@ const failures = checks.flatMap(([name, pattern, guidance]) => {
   return [`${name} at app/globals.css:${line} — ${guidance}`];
 });
 
+const semanticShadowValues = new Set([
+  'none',
+  'var(--shadow-card)',
+  'var(--shadow-raised)',
+  'var(--shadow-floating)',
+  'var(--shadow-soft)',
+  'var(--shadow-popover)',
+]);
+
 for (const [property, guidance] of [
-  ['box-shadow', 'Use borders and spacing instead of drop shadows.'],
+  ['box-shadow', 'Use a named semantic shadow token so depth stays intentional and consistent.'],
   ['backdrop-filter', 'Keep surfaces opaque and unblurred.'],
 ]) {
   for (const match of css.matchAll(new RegExp(`(?<!-)${property}\\s*:\\s*([^;]+);`, 'gi'))) {
-    if (match[1].trim().replace(/\s*!important$/, '') === 'none') continue;
+    const value = match[1].trim().replace(/\s*!important$/, '');
+    if (property === 'box-shadow' && semanticShadowValues.has(value)) continue;
+    if (property === 'backdrop-filter' && value === 'none') continue;
     const line = css.slice(0, match.index).split('\n').length;
     failures.push(`${property} at app/globals.css:${line} — ${guidance}`);
   }
@@ -40,4 +51,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Design guardrails passed: solid surfaces, normal case text, bounded motion, and accessibility fallbacks are present.');
+console.log('Design guardrails passed: solid surfaces, semantic depth, normal case text, bounded motion, and accessibility fallbacks are present.');

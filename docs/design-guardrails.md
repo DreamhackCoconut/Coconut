@@ -4,8 +4,8 @@ This document is the visual contract for Coconut. It exists to keep parallel con
 
 ## Surface and type rules
 
-- Surfaces use solid, opaque tokens only. No gradients, glassmorphism, backdrop blur, or drop shadows.
-- Depth comes from tonal surface blocks, spacing, grouping, and contrast rather than effects. Container borders are off by default; outlines are reserved for focus and clear errors.
+- Surfaces use solid, opaque tokens only. No gradients, glassmorphism, or backdrop blur.
+- Depth comes from tonal surface blocks, spacing, grouping, contrast, and a small semantic shadow hierarchy. Container borders are off by default; outlines are reserved for focus and clear errors. Use `--shadow-card`, `--shadow-raised`, or `--shadow-floating` rather than inventing a literal shadow per component.
 - Controls may use the shared circular radius tokens. Cards and panels use the same radius scale; do not introduce one-off corner values without a reason.
 - Use the system sans-serif stack for readable text. Labels, status text, and metadata inherit the same readable family.
 - Write interface copy in normal sentence case. Avoid all-caps labels, lowercase labels used as styling, small caps, and decorative tracking.
@@ -37,7 +37,7 @@ Keep the final visual rules in the `Flat visual contract` section of `app/global
 npm run lint:design
 ```
 
-The check rejects gradients, non-empty shadows, backdrop blur, all-caps/small-caps declarations, unbounded transitions, and scale-from-zero entrances. It also requires hover and reduced-motion accessibility guards.
+The check rejects gradients, arbitrary shadow values, backdrop blur, all-caps/small-caps declarations, unbounded transitions, and scale-from-zero entrances. It also requires hover and reduced-motion accessibility guards.
 
 ## Research references
 

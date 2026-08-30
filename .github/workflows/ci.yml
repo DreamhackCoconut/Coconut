@@ -102,6 +102,9 @@ jobs:
               appwrite/functions.json|functions/*|scripts/build-functions.mjs)
                 functions=true
                 ;;
+              scripts/provision-appwrite.ts)
+                tables=true
+                ;;
               appwrite/sites.json|app/*|components/*|public/*|next.config.mjs|postcss.config.mjs|tailwind.config.ts)
                 site=true
                 ;;
@@ -201,6 +204,14 @@ jobs:
             echo "Appwrite reported a Functions deployment error."
             exit 1
           fi
+
+      - name: Install dependencies for schema reconciliation
+        if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.tables == 'true'
+        run: npm ci
+
+      - name: Reconcile TablesDB columns and indexes
+        if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.tables == 'true'
+        run: npm run appwrite:provision
 
       - name: Deploy Appwrite Site
         if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.site == 'true'

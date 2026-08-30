@@ -1,5 +1,6 @@
-import { ArrowRight, Github, Waves } from 'lucide-react';
+import { ArrowRight, Github } from 'lucide-react';
 import Link from 'next/link';
+import { CoconutMark } from '@/components/coconut-mark';
 
 export function SiteFooter({ onJoin }: { onJoin?: () => void }) {
   return (
@@ -13,7 +14,7 @@ export function SiteFooter({ onJoin }: { onJoin?: () => void }) {
         {onJoin ? <button className="site-footer-cta-button pressable" type="button" onClick={onJoin}>Create a free account <ArrowRight size={15} /></button> : <Link className="site-footer-cta-button pressable" href="/seller">Open the seller workspace <ArrowRight size={15} /></Link>}
       </div>
       <div className="site-footer-main">
-        <Link className="site-footer-brand" href="/" aria-label="Coconut home"><span className="brand-mark" aria-hidden="true"><Waves size={17} /></span><span><span className="brand-name">Coconut</span><span className="brand-note">island-made logistics</span></span></Link>
+        <Link className="site-footer-brand" href="/" aria-label="Coconut home"><span className="brand-mark" aria-hidden="true"><CoconutMark /></span><span><span className="brand-name">Coconut</span><span className="brand-note">island-made logistics</span></span></Link>
         <p>Independent makers stay independent. The expensive movement gets shared.</p>
         <nav className="site-footer-links" aria-label="Footer navigation">
           <Link href="/seller">Artisan workspace</Link>

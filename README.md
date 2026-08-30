@@ -118,6 +118,18 @@ npm run build:functions
 
 For a cloud project, use the checked-in `appwrite.config.json`, `appwrite/functions.json`, `appwrite/sites.json`, and `appwrite/tables.json`, then run `npm run appwrite:provision` and `npm run appwrite:seed`. `DEMO_MODE=true` keeps the canonical state reproducible; the API exposes `/demo/reset` for a reset before judging. For a deployed operator-only reset, set the server-side `DEMO_RESET_TOKEN`; the browser reset still restores the local judging state immediately.
 
+### Automatic Appwrite deployment
+
+The `Coconut checks` workflow validates every pull request and push to `main`. A push to `main` first compares the changed paths, then deploys only the affected Appwrite resource groups: `appwrite/tables.json` changes deploy TablesDB, function or shared backend changes deploy the Functions, and app or frontend changes deploy the Site. Changes to `appwrite.config.json` deploy all three. Documentation-only and workflow-only changes do not start an Appwrite deployment. The workflow installs a pinned Appwrite CLI version and never deploys from pull requests.
+
+In the repository's **Settings → Secrets and variables → Actions**, add these secrets:
+
+- `APPWRITE_ENDPOINT` — the regional project endpoint, such as `https://<REGION>.cloud.appwrite.io/v1`
+- `APPWRITE_PROJECT_ID` — the Appwrite project ID
+- `APPWRITE_API_KEY` — a server-side deployment key with the minimum TablesDB, Functions, and Sites permissions needed to push resources
+
+Keep runtime variables such as `EASYPOST_API_KEY`, `OPENROUTESERVICE_API_KEY`, `COMTRADE_API_KEY`, and `DEMO_RESET_TOKEN` in Appwrite Function/Site environment settings or local untracked environment files. They are not committed or printed by the workflow. Run `npm run appwrite:seed` intentionally once after a new project is provisioned; normal deploys do not reseed rows or overwrite live account data.
+
 ## Canonical demo path
 
 1. Shop: add Handwoven Coastal Basket.

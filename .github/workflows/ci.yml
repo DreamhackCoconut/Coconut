@@ -54,3 +54,138 @@ jobs:
       - name: Run optimizer tests
         run: python -m pytest -q tests
 
+  appwrite_changes:
+    name: Detect Appwrite changes
+    runs-on: ubuntu-latest
+    outputs:
+      any: ${{ steps.filter.outputs.any }}
+      tables: ${{ steps.filter.outputs.tables }}
+      functions: ${{ steps.filter.outputs.functions }}
+      site: ${{ steps.filter.outputs.site }}
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed Appwrite resources
+        id: filter
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          base_sha="${BASE_SHA:-}"
+          head_sha="$HEAD_SHA"
+          if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
+            base_sha="$(git rev-list --max-parents=0 "$head_sha")"
+          fi
+
+          tables=false
+          functions=false
+          site=false
+
+          while IFS= read -r changed_path; do
+            case "$changed_path" in
+              appwrite.config.json)
+                tables=true
+                functions=true
+                site=true
+                ;;
+              appwrite/tables.json)
+                tables=true
+                ;;
+              appwrite/functions.json|functions/*|scripts/build-functions.mjs)
+                functions=true
+                ;;
+              appwrite/sites.json|app/*|components/*|public/*|next.config.mjs|postcss.config.mjs|tailwind.config.ts)
+                site=true
+                ;;
+              lib/*|package.json|package-lock.json|tsconfig.json)
+                functions=true
+                site=true
+                ;;
+            esac
+          done < <(git diff --name-only "$base_sha" "$head_sha")
+
+          any=false
+          if [[ "$tables" == "true" || "$functions" == "true" || "$site" == "true" ]]; then
+            any=true
+          fi
+
+          echo "tables=$tables" >> "$GITHUB_OUTPUT"
+          echo "functions=$functions" >> "$GITHUB_OUTPUT"
+          echo "site=$site" >> "$GITHUB_OUTPUT"
+          echo "any=$any" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Appwrite deployment change detection"
+            echo "- TablesDB schema: `$tables`"
+            echo "- Functions: `$functions`"
+            echo "- Site: `$site`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy to Appwrite
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [web, optimizer, appwrite_changes]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: appwrite-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+      APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+      APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check Appwrite deployment secrets
+        id: appwrite-secrets
+        shell: bash
+        run: |
+          if [[ -z "$APPWRITE_ENDPOINT" || -z "$APPWRITE_PROJECT_ID" || -z "$APPWRITE_API_KEY" ]]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Appwrite deployment skipped because APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, or APPWRITE_API_KEY is not configured."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pinned Appwrite CLI
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        run: npm install --global appwrite-cli@27.2.1
+
+      - name: Validate Appwrite deployment secrets
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        shell: bash
+        run: |
+          test -n "$APPWRITE_ENDPOINT" || { echo "APPWRITE_ENDPOINT is not configured"; exit 1; }
+          test -n "$APPWRITE_PROJECT_ID" || { echo "APPWRITE_PROJECT_ID is not configured"; exit 1; }
+          test -n "$APPWRITE_API_KEY" || { echo "APPWRITE_API_KEY is not configured"; exit 1; }
+
+      - name: Configure Appwrite CLI
+        if: steps.appwrite-secrets.outputs.configured == 'true'
+        run: appwrite client --endpoint "$APPWRITE_ENDPOINT" --project-id "$APPWRITE_PROJECT_ID" --key "$APPWRITE_API_KEY"
+
+      - name: Deploy TablesDB schema
+        if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.tables == 'true'
+        run: appwrite push tables --all --force
+
+      - name: Deploy Appwrite Functions
+        if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.functions == 'true'
+        run: appwrite push functions --all --force
+
+      - name: Deploy Appwrite Site
+        if: steps.appwrite-secrets.outputs.configured == 'true' && needs.appwrite_changes.outputs.site == 'true'
+        run: appwrite push sites --all --force

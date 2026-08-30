@@ -2,26 +2,45 @@
 
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, CircleCheck, CreditCard, Leaf, Minus, Package, Plus, ShieldCheck, Trash2, Waves } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { CartLine, Destination, Product, Quote, Recommendation, Seller } from '@/lib/domain/types';
 
 function money(value: number) { return `$${value.toFixed(2)}`; }
 function dateLabel(value: string) { return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(value)); }
 
 function CartItem({ product, quantity, onChange, onRemove }: { product: Product; quantity: number; onChange: (quantity: number) => void; onRemove: () => void }) {
+  const [removing, setRemoving] = useState(false);
+  const removalTimer = useRef<number>();
+
+  function scheduleRemove() {
+    setRemoving(true);
+    removalTimer.current = window.setTimeout(onRemove, 180);
+  }
+  function cancelRemove() {
+    window.clearTimeout(removalTimer.current);
+    setRemoving(false);
+  }
+  function handleDecrement() {
+    if (quantity - 1 <= 0) scheduleRemove(); else onChange(quantity - 1);
+  }
+  function handleIncrement() {
+    if (removing) cancelRemove();
+    onChange(Math.min(20, quantity + 1));
+  }
+
   return (
-    <article className="cart-line">
+    <article className={`cart-line motion-fade${removing ? ' cart-line-removing' : ''}`}>
       <Image className="cart-line-image" src={product.imageUrl} alt={product.name} width={78} height={78} unoptimized />
       <div>
         <h3>{product.name}</h3>
         <p>{product.category} · {product.weightKg.toFixed(2)} kg each</p>
         <div className="quantity-controls" aria-label={`Quantity for ${product.name}`}>
-          <button className="pressable" type="button" onClick={() => onChange(Math.max(0, quantity - 1))} aria-label="Decrease quantity"><Minus size={12} /></button>
+          <button className="pressable" type="button" onClick={handleDecrement} aria-label="Decrease quantity"><Minus size={12} /></button>
           <span>{String(quantity).padStart(2, '0')}</span>
-          <button className="pressable" type="button" onClick={() => onChange(Math.min(20, quantity + 1))} aria-label="Increase quantity"><Plus size={12} /></button>
+          <button className="pressable" type="button" onClick={handleIncrement} aria-label="Increase quantity"><Plus size={12} /></button>
         </div>
       </div>
-      <div className="line-price"><strong>{money(product.priceUsd * quantity)}</strong><button className="remove-button" type="button" onClick={onRemove}><Trash2 size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> remove</button></div>
+      <div className="line-price"><strong>{money(product.priceUsd * quantity)}</strong><button className="remove-button" type="button" onClick={scheduleRemove}><Trash2 size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> remove</button></div>
     </article>
   );
 }

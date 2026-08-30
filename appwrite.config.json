@@ -1,0 +1,34 @@
+{
+  "projectId": "<PROJECT_ID>",
+  "projectName": "Coconut",
+  "endpoint": "https://<REGION>.cloud.appwrite.io/v1",
+  "includes": {
+    "functions": "appwrite/functions.json",
+    "tables": "appwrite/tables.json",
+    "sites": "appwrite/sites.json"
+  },
+  "settings": {
+    "services": {
+      "account": false,
+      "databases": true,
+      "functions": true,
+      "sites": true,
+      "messaging": false
+    },
+    "protocols": {
+      "rest": true,
+      "graphql": false,
+      "websocket": false
+    }
+  },
+  "tablesDB": [
+    {
+      "$id": "coconut",
+      "name": "Coconut",
+      "enabled": true
+    }
+  ],
+  "buckets": [],
+  "teams": [],
+  "topics": []
+}

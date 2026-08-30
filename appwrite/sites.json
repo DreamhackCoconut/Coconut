@@ -1,0 +1,20 @@
+[
+  {
+    "$id": "coconut-site",
+    "name": "Coconut",
+    "logging": true,
+    "framework": "nextjs",
+    "timeout": 30,
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "outputDirectory": ".next",
+    "buildSpecification": "s-1vcpu-1gb",
+    "runtimeSpecification": "s-1vcpu-1gb",
+    "buildRuntime": "node-22",
+    "adapter": "ssr",
+    "fallbackFile": "",
+    "startCommand": "npm start",
+    "deploymentRetention": 7,
+    "path": ".."
+  }
+]

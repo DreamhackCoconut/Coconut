@@ -4,6 +4,7 @@ import { ArrowRight, Box, CircleCheck, MapPin, PackageCheck, Plus, Route as Rout
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import type { BatchSnapshot, CartLine, Departure, Product, ProductCategory, Seller } from '@/lib/domain/types';
+import { useReveal } from '@/components/use-reveal';
 
 const categories: Array<'All' | ProductCategory> = ['All', 'Basketry', 'Jewelry', 'Woodwork', 'Textiles', 'Ceramics', 'Prints'];
 
@@ -35,6 +36,8 @@ function ProductCard({ product, seller, index, added, onAdd }: { product: Produc
 export function ShopView({ products, sellers, departures, batch, cartLines, onAdd, onOpenCart }: { products: Product[]; sellers: Seller[]; departures: Departure[]; batch: BatchSnapshot; cartLines: CartLine[]; onAdd: (product: Product) => void; onOpenCart: () => void }) {
   const [category, setCategory] = useState<'All' | ProductCategory>('All');
   const [search, setSearch] = useState('');
+  const howReveal = useReveal<HTMLElement>();
+  const collectionReveal = useReveal<HTMLElement>();
   const selectedDeparture = departures.find((departure) => departure.id === batch.departureId) ?? departures[1] ?? departures[0];
   const utilization = selectedDeparture ? Math.max(batch.currentWeightKg / selectedDeparture.maxWeightKg, batch.currentVolumeM3 / selectedDeparture.maxVolumeM3) : 0;
   const sellerMap = useMemo(() => new Map(sellers.map((seller) => [seller.id, seller])), [sellers]);
@@ -53,7 +56,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
       <section className="hero-grid motion-fade">
         <div className="hero-copy">
           <span className="eyebrow">Rarotonga · Cook Islands</span>
-          <h1 className="display">Island-made.<br /><em>Smarter shipped.</em></h1>
+          <h1 className="display motion-stagger"><span style={{ ['--stagger' as string]: 0 }}>Island-made.</span><br /><em style={{ ['--stagger' as string]: 1 }}>Smarter shipped.</em></h1>
           <p className="lede">Discover work made close to the water, then let Coconut find the cleanest shared journey home.</p>
           <div className="hero-actions">
             <button className="button-primary pressable" type="button" onClick={onOpenCart}>See the shared journey <ArrowRight size={15} /></button>
@@ -61,6 +64,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
           </div>
         </div>
         <aside className="hero-aside">
+          <span className="hero-dot hero-dot-a" aria-hidden="true" /><span className="hero-dot hero-dot-b" aria-hidden="true" /><span className="hero-dot hero-dot-c" aria-hidden="true" />
           <span className="eyebrow">Next shared departure</span>
           <h2>{selectedDeparture?.label ?? 'Friday West Coast Batch'}</h2>
           <p>One parcel network for many small makers. Fill the space already moving across the Pacific.</p>
@@ -78,7 +82,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         <div className="signal-cell" style={{ ['--stagger' as string]: 2 }}><span className="tiny-label">Current signal</span><strong><ShipWheel size={18} style={{ display: 'inline', verticalAlign: '-3px' }} /> {batch.weatherLabel.toLowerCase()} seas</strong><p>Route reliability is part of every recommendation.</p></div>
       </section>
 
-      <section className="how-it-works" aria-labelledby="how-coconut-works">
+      <section ref={howReveal.ref} className={`how-it-works ${howReveal.className}`} aria-labelledby="how-coconut-works">
         <div className="how-header"><div><span className="eyebrow">The simple version</span><h2 id="how-coconut-works" className="section-heading">How <em>Coconut</em> works</h2></div><p>Independent makers stay independent. Coconut coordinates the expensive movement between them.</p></div>
         <ol className="how-grid">
           <li className="how-step"><span className="how-step-index">01</span><div><h3>Shop local</h3><p>Buy directly from island artisans and discover the story behind each piece.</p></div></li>
@@ -88,7 +92,7 @@ export function ShopView({ products, sellers, departures, batch, cartLines, onAd
         </ol>
       </section>
 
-      <section id="collection" className="section-topline">
+      <section id="collection" ref={collectionReveal.ref} className={`section-topline ${collectionReveal.className}`}>
         <div><span className="eyebrow">The collection</span><h2 className="section-heading">Pieces with a <em>place</em></h2></div>
         <p>Small-batch objects from fictional island workshops, seeded for this demo and ready to join your next departure.</p>
       </section>
